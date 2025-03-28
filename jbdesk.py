@@ -3,7 +3,9 @@ import re
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QAction, QTextEdit,
                              QVBoxLayout, QWidget, QPushButton, QLabel,
                              QGroupBox, QComboBox, QHBoxLayout)
+from PyQt5.QtWidgets import QMenu, QMessageBox, QSystemTrayIcon
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QIcon
 import pytz
 from datetime import datetime
 
@@ -144,6 +146,57 @@ class JbDesk(QMainWindow):
 
         self.create_menu()
 
+        # 시스템 트레이 아이콘 생성
+        self.tray_icon = QSystemTrayIcon(self)
+        icon_path = "tray_icon.png"  # 아이콘 경로 확인 (아이콘 파일이 있어야 합니다)
+        self.tray_icon.setIcon(QIcon(icon_path))
+        self.tray_icon.setToolTip("PyQt5 Tray App")
+        self.tray_icon.show()  # 트레이 아이콘 표시
+
+        # 트레이 메뉴 설정
+        tray_menu = QMenu()
+        restore_action = QAction("열기", self)
+        restore_action.triggered.connect(self.show_window)
+
+        quit_action = QAction("종료", self)
+        quit_action.triggered.connect(self.exit_app)
+
+        tray_menu.addAction(restore_action)
+        tray_menu.addAction(quit_action)
+
+        self.tray_icon.setContextMenu(tray_menu)
+        self.tray_icon.activated.connect(self.tray_icon_clicked)
+
+    def closeEvent(self, event):
+        """창 닫기 버튼(X) 클릭 시 앱 종료 여부 확인"""
+        reply = QMessageBox.question(self, "종료 확인", "앱을 종료하시겠습니까?",
+                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+
+        if reply == QMessageBox.Yes:
+            self.exit_app()
+        else:
+            event.ignore()  # 창을 최소화하여 숨깁니다
+            self.hide()  # 창 숨기기
+            self.tray_icon.showMessage(
+                "앱이 실행 중", "트레이에서 실행 중입니다.", QSystemTrayIcon.Information, 2000
+            )
+
+    def show_window(self):
+        """트레이 메뉴에서 '열기' 선택 시 창 복원"""
+        self.showNormal()
+        self.activateWindow()
+
+    def tray_icon_clicked(self, reason):
+        """트레이 아이콘 클릭 시 창을 다시 보이게 함"""
+        if reason == QSystemTrayIcon.ActivationReason.Trigger:
+            self.show_window()
+
+    def exit_app(self):
+        """트레이 메뉴에서 '종료' 선택 시 앱 완전히 종료"""
+        self.tray_icon.hide()  # 트레이 아이콘 숨기기
+        QApplication.quit()  # PyQt5 이벤트 루프 종료
+        sys.exit(0)  # 강제 종료
+
     def create_menu(self):
         menu_bar = self.menuBar()
 
@@ -198,6 +251,7 @@ class JbDesk(QMainWindow):
         self.to_layout.addWidget(self.to_timezone)
         self.to_group.setLayout(self.to_layout)
         self.to_timezone.addItems(["US/Pacific", "Asia/Seoul"])
+        self.to_timezone.setCurrentText("Asia/Seoul")
 
         self.timezone_layout.addWidget(self.from_group)
         self.timezone_layout.addWidget(self.to_group)
@@ -245,6 +299,13 @@ class JbDesk(QMainWindow):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    ex = JbDesk()
-    ex.show()
+
+    # 모든 창이 닫혀도 앱이 종료되지 않도록 설정
+    app.setQuitOnLastWindowClosed(False)
+
+    # 아이콘 설정
+    app.setWindowIcon(QIcon("tray_icon.png"))
+
+    window = JbDesk()
+    window.show()
     sys.exit(app.exec_())

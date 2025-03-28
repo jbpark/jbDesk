@@ -1,109 +1,15 @@
 import sys
-import re
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QAction, QTextEdit,
                              QVBoxLayout, QWidget, QPushButton, QLabel,
                              QGroupBox, QComboBox, QHBoxLayout)
 from PyQt5.QtWidgets import QMenu, QMessageBox, QSystemTrayIcon
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
-import pytz
-from datetime import datetime
 
-def remove_line_spaces(text):
-    return '\n'.join([line for line in text.splitlines() if line.strip()])
+from lib.util.log_util import convert_log_timezone_line
+from lib.util.string_util import remove_line_spaces, to_camel_case_line, to_snake_case_line, to_pascal_case_line, \
+    to_screaming_snake_case_line, to_train_case_line, to_dot_notation_line
 
-
-def to_snake_case(text):
-    text = re.sub(r'([a-z])([A-Z])', r'\1_\2', text)  # camelCase -> snake_case
-    text = re.sub(r'[-\s]', '_', text)  # kebab-case, space -> snake_case
-    return text.lower()
-
-
-def to_camel_case(text):
-    words = to_snake_case(text).split('_')
-    return words[0] + ''.join(word.capitalize() for word in words[1:])
-
-
-def to_pascal_case(text):
-    words = to_snake_case(text).split('_')
-    return ''.join(word.capitalize() for word in words)
-
-
-def to_kebab_case(text):
-    return to_snake_case(text).replace('_', '-')
-
-
-def to_screaming_snake_case(text):
-    return to_snake_case(text).upper()
-
-
-def to_train_case(text):
-    return '-'.join(word.capitalize() for word in to_snake_case(text).split('_'))
-
-
-def to_dot_notation(text):
-    words = re.split(r'[\s_\-]+', text)
-    return ".".join(word.lower() for word in words)
-
-def to_camel_case_line(text):
-    lines = text.strip().split("\n")  # 줄 단위로 분리
-    return "\n".join([to_camel_case(line) for line in lines])
-
-def to_snake_case_line(text):
-    lines = text.strip().split("\n")  # 줄 단위로 분리
-    return "\n".join([to_snake_case(line) for line in lines])
-
-def to_pascal_case_line(text):
-    lines = text.strip().split("\n")  # 줄 단위로 분리
-    return "\n".join([to_pascal_case(line) for line in lines])
-
-def to_screaming_snake_case_line(text):
-    lines = text.strip().split("\n")  # 줄 단위로 분리
-    return "\n".join([to_screaming_snake_case(line) for line in lines])
-
-def to_kebab_case_line(text):
-    lines = text.strip().split("\n")  # 줄 단위로 분리
-    return "\n".join([to_kebab_case(line) for line in lines])
-
-def to_train_case_line(text):
-    lines = text.strip().split("\n")  # 줄 단위로 분리
-    return "\n".join([to_train_case(line) for line in lines])
-
-def to_dot_notation_line(text):
-    lines = text.strip().split("\n")  # 줄 단위로 분리
-    return "\n".join([to_dot_notation(line) for line in lines])
-
-DATE_PATTERNS = [
-    (r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} [A-Z]{3}', '%Y-%m-%d %H:%M:%S %Z'),
-    (r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}', '%Y-%m-%d %H:%M:%S'),
-    (r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}', '%Y-%m-%d %H:%M'),
-    (r'\d{2}/\d{2}/\d{4} \d{1,2}:\d{1,2}:\d{1,2} [APap][Mm]', '%m/%d/%Y %I:%M:%S %p'),
-    (r'\d{2}/\d{2}/\d{4} \d{1,2}:\d{1,2} [APap][Mm]', '%m/%d/%Y %I:%M %p'),
-    (r'\d{4}-\d{1,2}-\d{1,2} [APap][Mm] \d{1,2}:\d{1,2}:\d{1,2}', '%Y-%m-%d %p %I:%M:%S'),
-    (r'\d{4}-\d{1,2}-\d{1,2} \d{1,2}:\d{1,2}:\d{1,2} [APap][Mm]', '%Y-%m-%d %I:%M:%S %p'),
-    (r'\d{2}/[A-Za-z]{3}/\d{4}:\d{2}:\d{2}:\d{2} [-+]\d{4}', '%d/%b/%Y:%H:%M:%S %z')
-]
-
-def convert_log_timezone(log_text: str, source_timezone: str, dest_timezone: str) -> str:
-    for pattern, date_format in DATE_PATTERNS:
-        match = re.search(pattern, log_text)
-        if match:
-            datetime_str = match.group()
-            try:
-                dt = datetime.strptime(datetime_str, date_format)
-                if '%z' not in date_format and '%Z' not in date_format:
-                    source_tz = pytz.timezone(source_timezone)
-                    dt = source_tz.localize(dt)
-                dt = dt.astimezone(pytz.timezone(dest_timezone))
-                new_datetime_str = dt.strftime(date_format)
-                log_text = log_text.replace(datetime_str, new_datetime_str)
-            except ValueError:
-                continue
-    return log_text
-
-def convert_log_timezone_line(log_text: str, source_timezone: str, dest_timezone: str):
-    lines = log_text.strip().split("\n")  # 줄 단위로 분리
-    return "\n".join([convert_log_timezone(line, source_timezone, dest_timezone) for line in lines])
 
 class JbDesk(QMainWindow):
     def __init__(self):
@@ -111,59 +17,54 @@ class JbDesk(QMainWindow):
         self.initUI()
 
     def initUI(self):
+        self.init_widget()
+
+        self.init_menu()
+
+        self.init_tray()
+
+    def init_widget(self):
         self.setWindowTitle("JbDesk")
         self.setGeometry(300, 300, 1200, 900)
-
         self.selected_function = ""
         self.centralWidget = QWidget()
         self.setCentralWidget(self.centralWidget)
-
         self.main_layout = QVBoxLayout()
-
         self.tool_label = QLabel("선택된 기능: ", self)
         self.main_layout.addWidget(self.tool_label)
-
         self.input_group = QGroupBox("입력")
         self.input_layout = QVBoxLayout()
         self.input_text = QTextEdit()
         self.input_layout.addWidget(self.input_text)
         self.input_group.setLayout(self.input_layout)
         self.main_layout.addWidget(self.input_group)
-
         self.convert_button = QPushButton("변환")
         self.convert_button.setFixedWidth(self.convert_button.fontMetrics().width("변환") + 20)
         self.convert_button.clicked.connect(self.perform_conversion)
         self.main_layout.addWidget(self.convert_button, alignment=Qt.AlignCenter)
-
         self.output_group = QGroupBox("출력")
         self.output_layout = QVBoxLayout()
         self.output_text = QTextEdit()
         self.output_layout.addWidget(self.output_text)
         self.output_group.setLayout(self.output_layout)
         self.main_layout.addWidget(self.output_group)
-
         self.centralWidget.setLayout(self.main_layout)
 
-        self.create_menu()
-
+    def init_tray(self):
         # 시스템 트레이 아이콘 생성
         self.tray_icon = QSystemTrayIcon(self)
         icon_path = "tray_icon.png"  # 아이콘 경로 확인 (아이콘 파일이 있어야 합니다)
         self.tray_icon.setIcon(QIcon(icon_path))
         self.tray_icon.setToolTip("PyQt5 Tray App")
         self.tray_icon.show()  # 트레이 아이콘 표시
-
         # 트레이 메뉴 설정
         tray_menu = QMenu()
         restore_action = QAction("열기", self)
         restore_action.triggered.connect(self.show_window)
-
         quit_action = QAction("종료", self)
         quit_action.triggered.connect(self.exit_app)
-
         tray_menu.addAction(restore_action)
         tray_menu.addAction(quit_action)
-
         self.tray_icon.setContextMenu(tray_menu)
         self.tray_icon.activated.connect(self.tray_icon_clicked)
 
@@ -197,7 +98,7 @@ class JbDesk(QMainWindow):
         QApplication.quit()  # PyQt5 이벤트 루프 종료
         sys.exit(0)  # 강제 종료
 
-    def create_menu(self):
+    def init_menu(self):
         menu_bar = self.menuBar()
 
         line_menu = menu_bar.addMenu("줄단위")

@@ -1,5 +1,8 @@
-# JbDesk 1.3편-로그 timezone 변경
-https://javata.tistory.com/54
+# JbDesk 1.7편-Database 검색
+https://javata.tistory.com/58
 
 # 실행 방법
 run.bat
+
+# exec 파일 생성
+make_exe.bat

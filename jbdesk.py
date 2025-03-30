@@ -2,13 +2,53 @@ import sys
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QAction, QTextEdit,
                              QVBoxLayout, QWidget, QPushButton, QLabel,
                              QGroupBox, QComboBox, QHBoxLayout)
+from PyQt5.QtWidgets import QLineEdit, QTableWidget, QTableWidgetItem
 from PyQt5.QtWidgets import QMenu, QMessageBox, QSystemTrayIcon
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
+from sqlalchemy import create_engine, Column, Integer, String, select
+from sqlalchemy.orm import declarative_base, sessionmaker
+import os
 
 from lib.util.log_util import convert_log_timezone_line
 from lib.util.string_util import remove_line_spaces, to_camel_case_line, to_snake_case_line, to_pascal_case_line, \
     to_screaming_snake_case_line, to_train_case_line, to_dot_notation_line
+
+# 데이터베이스 설정
+DATABASE_URL = "sqlite:///members.db"
+engine = create_engine(DATABASE_URL, echo=True)
+Base = declarative_base()
+Session = sessionmaker(bind=engine)
+session = Session()
+
+
+# Member 테이블 정의
+class Member(Base):
+    __tablename__ = "members"
+    id = Column(Integer, primary_key=True)
+    name = Column(String, nullable=False)
+    age = Column(Integer, nullable=False)
+
+
+# 데이터베이스 및 테이블 생성 (존재하지 않으면 생성)
+if not os.path.exists("members.db"):
+    Base.metadata.create_all(engine)
+
+
+    # 테스트 데이터 추가
+    def add_test_data():
+        test_members = [
+            Member(name="Alice", age=30),
+            Member(name="Alice", age=28),
+            Member(name="Bob", age=25),
+            Member(name="Charlie", age=35),
+            Member(name="David", age=40)
+        ]
+        session.add_all(test_members)
+        session.commit()
+
+
+    add_test_data()
 
 
 class JbDesk(QMainWindow):
@@ -101,11 +141,27 @@ class JbDesk(QMainWindow):
     def init_menu(self):
         menu_bar = self.menuBar()
 
-        line_menu = menu_bar.addMenu("줄단위")
-        line_action = QAction("줄 공백 제거", self)
-        line_action.triggered.connect(lambda: self.set_function("줄 공백 제거"))
-        line_menu.addAction(line_action)
+        self.init_menu_line(menu_bar)
 
+        self.init_menu_notation(menu_bar)
+
+        self.init_menu_timezone(menu_bar)
+
+        self.init_menu_db(menu_bar)
+
+    def init_menu_db(self, menu_bar):
+        db_menu = menu_bar.addMenu("Database")
+        db_action = QAction("Member 검색", self)
+        db_action.triggered.connect(lambda: self.set_function("Member 검색"))
+        db_menu.addAction(db_action)
+
+    def init_menu_timezone(self, menu_bar):
+        timezone_menu = menu_bar.addMenu("TimeZone")
+        timezone_action = QAction("로그 TimeZone 변환", self)
+        timezone_action.triggered.connect(lambda: self.set_function("로그 TimeZone 변환"))
+        timezone_menu.addAction(timezone_action)
+
+    def init_menu_notation(self, menu_bar):
         notation_menu = menu_bar.addMenu("표기법")
         notations = ["camelCase", "snake_case", "PascalCase", "SCREAMING_SNAKE_CASE", "Train-Case", "dot.notation"]
         for notation in notations:
@@ -113,21 +169,49 @@ class JbDesk(QMainWindow):
             action.triggered.connect(lambda checked, n=notation: self.set_function(n))
             notation_menu.addAction(action)
 
-        timezone_menu = menu_bar.addMenu("TimeZone")
-        timezone_action = QAction("로그 TimeZone 변환", self)
-        timezone_action.triggered.connect(lambda: self.set_function("로그 TimeZone 변환"))
-        timezone_menu.addAction(timezone_action)
+    def init_menu_line(self, menu_bar):
+        line_menu = menu_bar.addMenu("줄단위")
+        line_action = QAction("줄 공백 제거", self)
+        line_action.triggered.connect(lambda: self.set_function("줄 공백 제거"))
+        line_menu.addAction(line_action)
 
     def set_function(self, function):
         self.selected_function = function
         self.tool_label.setText(f"선택된 기능: {function}")
 
-        if function == "로그 TimeZone 변환":
+        if function == "Member 검색":
+            self.setup_search_db()
+        elif function == "로그 TimeZone 변환":
             self.setup_timezone_conversion()
         else:
             self.setup_text_conversion()
 
         self.main_layout.insertWidget(0, self.tool_label)
+
+    def setup_search_db(self):
+        self.clear_layout()
+
+        # 첫째 라인: Member Name GroupBox + Search 버튼
+        name_layout = QHBoxLayout()
+        self.name_group = QGroupBox("Member Name")
+        self.name_input = QLineEdit()
+        group_layout = QVBoxLayout()
+        group_layout.addWidget(self.name_input)
+        self.name_group.setLayout(group_layout)
+
+        self.search_button = QPushButton("Search")
+        self.search_button.clicked.connect(self.search_member)
+
+        name_layout.addWidget(self.name_group)
+        name_layout.addWidget(self.search_button)
+
+        # 둘째 라인: Grid Table (Name, Age)
+        self.table = QTableWidget()
+        self.table.setColumnCount(2)
+        self.table.setHorizontalHeaderLabels(["Name", "Age"])
+
+        self.main_layout.insertLayout(1, name_layout)
+        self.main_layout.insertWidget(2, self.table)
 
     def setup_text_conversion(self):
         self.clear_layout()
@@ -172,6 +256,20 @@ class JbDesk(QMainWindow):
                     sub_item = item.layout().takeAt(0)
                     if sub_item.widget():
                         sub_item.widget().setParent(None)
+
+    def search_member(self):
+        name = self.name_input.text().strip()
+        if not name:
+            return
+
+        # SQLAlchemy 검색
+        stmt = select(Member).where(Member.name == name)
+        results = session.execute(stmt).scalars().all()
+
+        self.table.setRowCount(len(results))
+        for index, member in enumerate(results):
+            self.table.setItem(index, 0, QTableWidgetItem(member.name))
+            self.table.setItem(index, 1, QTableWidgetItem(str(member.age)))
 
     def perform_conversion(self):
         text = self.input_text.toPlainText()

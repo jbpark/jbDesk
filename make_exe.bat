@@ -21,11 +21,18 @@ if %errorlevel% neq 0 (
     pip install PyQt5
 )
 
-:: PyQt5 설치
+:: pytz 설치
 pip show pytz >nul 2>nul
 if %errorlevel% neq 0 (
     echo Installing pytz...
     pip install pytz
+)
+
+:: sqlalchemy 설치
+pip show sqlalchemy >nul 2>nul
+if %errorlevel% neq 0 (
+    echo Installing sqlalchemy...
+    pip install sqlalchemy
 )
 
 :: exe 파일 생성 > dist 폴더에 생성됨

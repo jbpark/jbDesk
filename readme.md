@@ -1,4 +1,4 @@
-# JbDesk 1.7편-Database 검색
+# JbDesk 2.1편-Database 검색
 https://javata.tistory.com/58
 
 # 실행 방법

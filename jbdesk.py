@@ -14,13 +14,18 @@ from lib.util.log_util import convert_log_timezone_line
 from lib.util.string_util import remove_line_spaces, to_camel_case_line, to_snake_case_line, to_pascal_case_line, \
     to_screaming_snake_case_line, to_train_case_line, to_dot_notation_line
 
-# 데이터베이스 설정
-DATABASE_URL = "sqlite:///members.db"
-engine = create_engine(DATABASE_URL, echo=True)
+# SQLite 데이터베이스 설정
+DATABASE_SQLITE_URL = "sqlite:///members.db"
+engine_sqlite = create_engine(DATABASE_SQLITE_URL, echo=True)
 Base = declarative_base()
-Session = sessionmaker(bind=engine)
-session = Session()
+Session_sqlite = sessionmaker(bind=engine_sqlite)
+session_sqlite = Session_sqlite()
 
+# Oracle 데이터베이스 설정
+DATABASE_ORACLE_URL = "oracle+cx_oracle://testuser:test1234@192.168.56.10:1521/?service_name=XEPDB1"
+engine_oracle = create_engine(DATABASE_ORACLE_URL, echo=True)
+Session_oracle = sessionmaker(bind=engine_oracle)
+session_oracle = Session_oracle()
 
 # Member 테이블 정의
 class Member(Base):
@@ -29,10 +34,16 @@ class Member(Base):
     name = Column(String, nullable=False)
     age = Column(Integer, nullable=False)
 
+# EMP 테이블 정의
+class Emp(Base):
+    __tablename__ = "EMP"
+    id = Column("EMPNO", Integer, primary_key=True)
+    name = Column("ENAME", String, nullable=False)
+    job = Column("JOB", String, nullable=False)
 
 # 데이터베이스 및 테이블 생성 (존재하지 않으면 생성)
 if not os.path.exists("members.db"):
-    Base.metadata.create_all(engine)
+    Base.metadata.create_all(engine_sqlite)
 
 
     # 테스트 데이터 추가
@@ -44,8 +55,8 @@ if not os.path.exists("members.db"):
             Member(name="Charlie", age=35),
             Member(name="David", age=40)
         ]
-        session.add_all(test_members)
-        session.commit()
+        session_sqlite.add_all(test_members)
+        session_sqlite.commit()
 
 
     add_test_data()
@@ -151,9 +162,12 @@ class JbDesk(QMainWindow):
 
     def init_menu_db(self, menu_bar):
         db_menu = menu_bar.addMenu("Database")
-        db_action = QAction("Member 검색", self)
-        db_action.triggered.connect(lambda: self.set_function("Member 검색"))
-        db_menu.addAction(db_action)
+        db_member_action = QAction("Member 검색", self)
+        db_member_action.triggered.connect(lambda: self.set_function("Member 검색"))
+        db_menu.addAction(db_member_action)
+        db_emp_action = QAction("Emp 검색", self)
+        db_emp_action.triggered.connect(lambda: self.set_function("EMP 검색"))
+        db_menu.addAction(db_emp_action)
 
     def init_menu_timezone(self, menu_bar):
         timezone_menu = menu_bar.addMenu("TimeZone")
@@ -180,7 +194,9 @@ class JbDesk(QMainWindow):
         self.tool_label.setText(f"선택된 기능: {function}")
 
         if function == "Member 검색":
-            self.setup_search_db()
+            self.setup_search_sqlite_member()
+        elif function == "EMP 검색":
+            self.setup_search_oracle_emp()
         elif function == "로그 TimeZone 변환":
             self.setup_timezone_conversion()
         else:
@@ -188,7 +204,7 @@ class JbDesk(QMainWindow):
 
         self.main_layout.insertWidget(0, self.tool_label)
 
-    def setup_search_db(self):
+    def setup_search_sqlite_member(self):
         self.clear_layout()
 
         # 첫째 라인: Member Name GroupBox + Search 버튼
@@ -200,7 +216,7 @@ class JbDesk(QMainWindow):
         self.name_group.setLayout(group_layout)
 
         self.search_button = QPushButton("Search")
-        self.search_button.clicked.connect(self.search_member)
+        self.search_button.clicked.connect(self.search_sqlite_member)
 
         name_layout.addWidget(self.name_group)
         name_layout.addWidget(self.search_button)
@@ -209,6 +225,31 @@ class JbDesk(QMainWindow):
         self.table = QTableWidget()
         self.table.setColumnCount(2)
         self.table.setHorizontalHeaderLabels(["Name", "Age"])
+
+        self.main_layout.insertLayout(1, name_layout)
+        self.main_layout.insertWidget(2, self.table)
+
+    def setup_search_oracle_emp(self):
+        self.clear_layout()
+
+        # 첫째 라인: Member Name GroupBox + Search 버튼
+        name_layout = QHBoxLayout()
+        self.name_group = QGroupBox("EMP Name")
+        self.name_input = QLineEdit()
+        group_layout = QVBoxLayout()
+        group_layout.addWidget(self.name_input)
+        self.name_group.setLayout(group_layout)
+
+        self.search_button = QPushButton("Search")
+        self.search_button.clicked.connect(self.search_oracle_emp)
+
+        name_layout.addWidget(self.name_group)
+        name_layout.addWidget(self.search_button)
+
+        # 둘째 라인: Grid Table (Name, Job)
+        self.table = QTableWidget()
+        self.table.setColumnCount(2)
+        self.table.setHorizontalHeaderLabels(["Name", "Job"])
 
         self.main_layout.insertLayout(1, name_layout)
         self.main_layout.insertWidget(2, self.table)
@@ -257,19 +298,33 @@ class JbDesk(QMainWindow):
                     if sub_item.widget():
                         sub_item.widget().setParent(None)
 
-    def search_member(self):
+    def search_sqlite_member(self):
         name = self.name_input.text().strip()
         if not name:
             return
 
         # SQLAlchemy 검색
         stmt = select(Member).where(Member.name == name)
-        results = session.execute(stmt).scalars().all()
+        results = session_sqlite.execute(stmt).scalars().all()
 
         self.table.setRowCount(len(results))
         for index, member in enumerate(results):
             self.table.setItem(index, 0, QTableWidgetItem(member.name))
             self.table.setItem(index, 1, QTableWidgetItem(str(member.age)))
+
+    def search_oracle_emp(self):
+        name = self.name_input.text().strip()
+        if not name:
+            return
+
+        # SQLAlchemy 검색
+        stmt = select(Emp).where(Emp.name == name)
+        results = session_oracle.execute(stmt).scalars().all()
+
+        self.table.setRowCount(len(results))
+        for index, emp in enumerate(results):
+            self.table.setItem(index, 0, QTableWidgetItem(emp.name))
+            self.table.setItem(index, 1, QTableWidgetItem(str(emp.job)))
 
     def perform_conversion(self):
         text = self.input_text.toPlainText()

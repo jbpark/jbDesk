@@ -35,5 +35,19 @@ if %errorlevel% neq 0 (
     pip install sqlalchemy
 )
 
+:: pyinstaller 설치
+pip show pyinstaller >nul 2>nul
+if %errorlevel% neq 0 (
+    echo Installing pyinstaller...
+    pip install pyinstaller
+)
+
+:: cx_Oracle 설치
+pip show cx_Oracle >nul 2>nul
+if %errorlevel% neq 0 (
+    echo Installing cx_Oracle...
+    pip install cx_Oracle
+)
+
 :: exe 파일 생성 > dist 폴더에 생성됨
 pyinstaller -w -F jbdesk.py

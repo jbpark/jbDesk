@@ -1,5 +1,5 @@
-# JbDesk 2.1편-Database 검색
-https://javata.tistory.com/58
+# JbDesk 2.2편-Database 검색 (Oracle + SQLAlchemy)
+https://javata.tistory.com/61
 
 # 실행 방법
 run.bat

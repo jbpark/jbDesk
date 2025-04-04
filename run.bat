@@ -35,5 +35,12 @@ if %errorlevel% neq 0 (
     pip install sqlalchemy
 )
 
+:: cx_Oracle 설치
+pip show cx_Oracle >nul 2>nul
+if %errorlevel% neq 0 (
+    echo Installing cx_Oracle...
+    pip install cx_Oracle
+)
+
 :: jbdesk.py 실행
 python jbdesk.py

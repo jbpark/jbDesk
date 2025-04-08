@@ -1,0 +1,50 @@
+# ORACLE
+ORACLE:
+  hostname: 192.168.56.10
+  port: 1521
+  service_name: XEPDB1
+  username: testuser
+
+# MARIADB
+DEV.FIRST.MARIADB:
+  hostname: 192.168.56.20
+  port: 3306
+  dbname: sample
+  username: root
+  # encoded password
+  password: gAAAAABn9K2pfYmSQT0c4Ay4qenyD99ffiWxTQPDOtIa98j9H8WTZ0HpaXfXEvETFLP-Tz59UJVMMBIFw5LIjxBSjlCD4wSOLw==
+
+DEV.SECOND.MARIADB:
+  hostname: 192.168.56.21
+  port: 3306
+  dbname: sample
+  username: root
+  password: gAAAAABn9K2pfYmSQT0c4Ay4qenyD99ffiWxTQPDOtIa98j9H8WTZ0HpaXfXEvETFLP-Tz59UJVMMBIFw5LIjxBSjlCD4wSOLw==
+
+STAGE.FIRST.MARIADB:
+  hostname: 192.168.56.22
+  port: 3306
+  dbname: sample
+  username: root
+  password: gAAAAABn9K2pfYmSQT0c4Ay4qenyD99ffiWxTQPDOtIa98j9H8WTZ0HpaXfXEvETFLP-Tz59UJVMMBIFw5LIjxBSjlCD4wSOLw==
+
+STAGE.SECOND.MARIADB:
+  hostname: 192.168.56.23
+  port: 3306
+  dbname: sample
+  username: root
+  password: gAAAAABn9K2pfYmSQT0c4Ay4qenyD99ffiWxTQPDOtIa98j9H8WTZ0HpaXfXEvETFLP-Tz59UJVMMBIFw5LIjxBSjlCD4wSOLw==
+
+LIVE.FIRST.MARIADB:
+  hostname: 192.168.56.24
+  port: 3306
+  dbname: sample
+  username: root
+  password: gAAAAABn9K2pfYmSQT0c4Ay4qenyD99ffiWxTQPDOtIa98j9H8WTZ0HpaXfXEvETFLP-Tz59UJVMMBIFw5LIjxBSjlCD4wSOLw==
+
+LIVE.SECOND.MARIADB:
+  hostname: 192.168.56.25
+  port: 3306
+  dbname: sample
+  username: root
+  password: gAAAAABn9K2pfYmSQT0c4Ay4qenyD99ffiWxTQPDOtIa98j9H8WTZ0HpaXfXEvETFLP-Tz59UJVMMBIFw5LIjxBSjlCD4wSOLw==

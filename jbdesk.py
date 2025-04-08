@@ -1,71 +1,36 @@
+import logging
+import os
 import sys
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QAction, QTextEdit,
-                             QVBoxLayout, QWidget, QPushButton, QLabel,
-                             QGroupBox, QComboBox, QHBoxLayout)
-from PyQt5.QtWidgets import QLineEdit, QTableWidget, QTableWidgetItem
-from PyQt5.QtWidgets import QMenu, QMessageBox, QSystemTrayIcon
+
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
-from sqlalchemy import create_engine, Column, Integer, String, select
-from sqlalchemy.orm import declarative_base, sessionmaker
-import os
+from PyQt5.QtWidgets import (QApplication, QMainWindow, QAction, QTextEdit,
+                             QVBoxLayout, QWidget, QPushButton, QLabel, QLineEdit,
+                             QGroupBox, QComboBox, QHBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView)
+from PyQt5.QtWidgets import QMenu, QMessageBox, QSystemTrayIcon
 
+from lib.config.config_loader import ConfigLoader
+from lib.config.yaml_loader import YamlLoader
+from lib.db.mariadb.mariadb_tenant_manager import MariadbTenantManager
+from lib.db.oracle.oracle_tenant_manager import OracleTenantManager
+from lib.db.sqlite.sqlite_tenant_manager import SqliteTenantManager
 from lib.util.log_util import convert_log_timezone_line
 from lib.util.string_util import remove_line_spaces, to_camel_case_line, to_snake_case_line, to_pascal_case_line, \
     to_screaming_snake_case_line, to_train_case_line, to_dot_notation_line
 
-# SQLite 데이터베이스 설정
-DATABASE_SQLITE_URL = "sqlite:///members.db"
-engine_sqlite = create_engine(DATABASE_SQLITE_URL, echo=True)
-Base = declarative_base()
-Session_sqlite = sessionmaker(bind=engine_sqlite)
-session_sqlite = Session_sqlite()
+logging.basicConfig(level=logging.DEBUG)
 
-# Oracle 데이터베이스 설정
-DATABASE_ORACLE_URL = "oracle+cx_oracle://testuser:test1234@192.168.56.10:1521/?service_name=XEPDB1"
-engine_oracle = create_engine(DATABASE_ORACLE_URL, echo=True)
-Session_oracle = sessionmaker(bind=engine_oracle)
-session_oracle = Session_oracle()
-
-# Member 테이블 정의
-class Member(Base):
-    __tablename__ = "members"
-    id = Column(Integer, primary_key=True)
-    name = Column(String, nullable=False)
-    age = Column(Integer, nullable=False)
-
-# EMP 테이블 정의
-class Emp(Base):
-    __tablename__ = "EMP"
-    id = Column("EMPNO", Integer, primary_key=True)
-    name = Column("ENAME", String, nullable=False)
-    job = Column("JOB", String, nullable=False)
-
-# 데이터베이스 및 테이블 생성 (존재하지 않으면 생성)
-if not os.path.exists("members.db"):
-    Base.metadata.create_all(engine_sqlite)
-
-
-    # 테스트 데이터 추가
-    def add_test_data():
-        test_members = [
-            Member(name="Alice", age=30),
-            Member(name="Alice", age=28),
-            Member(name="Bob", age=25),
-            Member(name="Charlie", age=35),
-            Member(name="David", age=40)
-        ]
-        session_sqlite.add_all(test_members)
-        session_sqlite.commit()
-
-
-    add_test_data()
-
+CONFIG_FILE = "jbdesk.conf"
+YAML_FILE = "config.yaml"
+VENDOR_ORACLE = "ORACLE"
+VENDOR_MARIADB = "MARIADB"
+VENDOR_SQLITE = "SQLITE"
 
 class JbDesk(QMainWindow):
     def __init__(self):
         super().__init__()
         self.initUI()
+        self.initVariable()
 
     def initUI(self):
         self.init_widget()
@@ -73,6 +38,10 @@ class JbDesk(QMainWindow):
         self.init_menu()
 
         self.init_tray()
+
+    def initVariable(self):
+        self.config_loader = ConfigLoader(os.path.join(os.getcwd(), CONFIG_FILE))
+        self.yaml_loader = YamlLoader(os.getcwd(), YAML_FILE)
 
     def init_widget(self):
         self.setWindowTitle("JbDesk")
@@ -162,12 +131,17 @@ class JbDesk(QMainWindow):
 
     def init_menu_db(self, menu_bar):
         db_menu = menu_bar.addMenu("Database")
-        db_member_action = QAction("Member 검색", self)
-        db_member_action.triggered.connect(lambda: self.set_function("Member 검색"))
-        db_menu.addAction(db_member_action)
-        db_emp_action = QAction("Emp 검색", self)
-        db_emp_action.triggered.connect(lambda: self.set_function("EMP 검색"))
-        db_menu.addAction(db_emp_action)
+        member_info_action = QAction("Member Info", self)
+        member_info_action.triggered.connect(lambda: self.set_function("Member Info"))
+        db_menu.addAction(member_info_action)
+
+        order_info_action = QAction("Order Info", self)
+        order_info_action.triggered.connect(lambda: self.set_function("Order Info"))
+        db_menu.addAction(order_info_action)
+
+        host_info_action = QAction("Host Info", self)
+        host_info_action.triggered.connect(lambda: self.set_function("Host Info"))
+        db_menu.addAction(host_info_action)
 
     def init_menu_timezone(self, menu_bar):
         timezone_menu = menu_bar.addMenu("TimeZone")
@@ -193,66 +167,255 @@ class JbDesk(QMainWindow):
         self.selected_function = function
         self.tool_label.setText(f"선택된 기능: {function}")
 
-        if function == "Member 검색":
-            self.setup_search_sqlite_member()
-        elif function == "EMP 검색":
-            self.setup_search_oracle_emp()
-        elif function == "로그 TimeZone 변환":
+        if function == "로그 TimeZone 변환":
             self.setup_timezone_conversion()
+        elif function == "Member Info":
+            self.setup_db_member()
+        elif function == "Order Info":
+            self.setup_db_order()
+        elif function == "Host Info":
+            self.setup_db_host()
         else:
             self.setup_text_conversion()
 
         self.main_layout.insertWidget(0, self.tool_label)
 
-    def setup_search_sqlite_member(self):
+    def setup_db_member(self):
         self.clear_layout()
 
-        # 첫째 라인: Member Name GroupBox + Search 버튼
-        name_layout = QHBoxLayout()
-        self.name_group = QGroupBox("Member Name")
-        self.name_input = QLineEdit()
-        group_layout = QVBoxLayout()
-        group_layout.addWidget(self.name_input)
-        self.name_group.setLayout(group_layout)
+        # 첫째 라인
+        first_line_layout = QHBoxLayout()
 
-        self.search_button = QPushButton("Search")
-        self.search_button.clicked.connect(self.search_sqlite_member)
+        # # Env 그룹박스
+        # self.env_group = QGroupBox("Env")
+        # env_layout = QHBoxLayout()
+        # self.env_combo = QComboBox()
+        # self.env_combo.addItems(["Live", "Stage", "Dev"])
+        # self.env_combo.setCurrentText("Dev")
+        # env_layout.addWidget(self.env_combo)
+        # self.db_combo = QComboBox()
+        # self.db_combo.addItems(["TRM", "OEM"])
+        # self.db_combo.setCurrentText("TRM")
+        # env_layout.addWidget(self.db_combo)
+        # self.env_group.setLayout(env_layout)
+        # first_line_layout.addWidget(self.env_group)
+        #
+        # # Member 그룹박스
+        # self.member_group = QGroupBox("Member Uid")
+        # member_layout = QHBoxLayout()
+        # self.member_line = QLineEdit()
+        # member_layout.addWidget(self.member_line)
+        # self.member_group.setLayout(member_layout)
+        # first_line_layout.addWidget(self.member_group)
 
-        name_layout.addWidget(self.name_group)
-        name_layout.addWidget(self.search_button)
+        # Dataset Name 그룹박스
+        self.dataset_group = QGroupBox("Member Name")
+        dataset_layout = QHBoxLayout()
+        self.dataset_line = QLineEdit()
+        dataset_layout.addWidget(self.dataset_line)
+        self.dataset_group.setLayout(dataset_layout)
+        first_line_layout.addWidget(self.dataset_group)
 
-        # 둘째 라인: Grid Table (Name, Age)
+        # Search 버튼
+        self.search_btn = QPushButton("Search")
+        #self.search_btn.clicked.connect(self.search_oracle_member)
+        self.search_btn.clicked.connect(self.search_test_oracle_member)
+        first_line_layout.addWidget(self.search_btn)
+
+        # 둘째 라인 - Grid
         self.table = QTableWidget()
-        self.table.setColumnCount(2)
-        self.table.setHorizontalHeaderLabels(["Name", "Age"])
+        self.table.setColumnCount(3)
+        self.table.setHorizontalHeaderLabels(["Column", "Value", "Comment"])
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
-        self.main_layout.insertLayout(1, name_layout)
+        self.main_layout.insertLayout(1, first_line_layout)
         self.main_layout.insertWidget(2, self.table)
 
-    def setup_search_oracle_emp(self):
+    def search_test_oracle_member(self):
+
+        manager = OracleTenantManager(self.yaml_loader, None, None, VENDOR_ORACLE)
+        manager.ensure_connect_info(self.config_loader)
+        #member_resp = manager.select_test_member_info(self.member_line.text(), self.dataset_line.text())
+        member_resp = manager.select_test_member_info(self.dataset_line.text())
+
+        if member_resp is None:
+            logging.debug("cannot found member")
+            return
+
+        row_position = self.table.rowCount()  # 현재 행 개수 확인
+        self.table.insertRow(row_position)  # 새 행 추가
+
+        # 새 행에 데이터 추가
+        self.table.setItem(row_position, 0, QTableWidgetItem("Name"))
+        self.table.setItem(row_position, 1, QTableWidgetItem(member_resp.name))
+        self.table.setItem(row_position, 2, QTableWidgetItem(""))
+
+        row_position = self.table.rowCount()  # 현재 행 개수 확인
+        self.table.insertRow(row_position)  # 새 행 추가
+
+        self.table.setItem(row_position, 0, QTableWidgetItem("Age"))
+        self.table.setItem(row_position, 1, QTableWidgetItem(member_resp.age))
+        self.table.setItem(row_position, 2, QTableWidgetItem(""))
+
+        logging.debug("search_oracle_member")
+
+    def search_oracle_member(self):
+
+        env_type = self.env_combo.currentText()
+        db_type = self.db_combo.currentText()
+
+        manager = OracleTenantManager(self.yaml_loader, env_type, db_type, VENDOR_ORACLE)
+
+        manager.ensure_connect_info(self.config_loader)
+        member_resp = manager.select_test_member_info(self.member_line.text(), self.dataset_line.text())
+
+        if member_resp is None:
+            logging.debug("cannot found member")
+            return
+
+        row_position = self.table.rowCount()  # 현재 행 개수 확인
+        self.table.insertRow(row_position)  # 새 행 추가
+
+        # 새 행에 데이터 추가
+        self.table.setItem(row_position, 0, QTableWidgetItem("UserName"))
+        self.table.setItem(row_position, 1, QTableWidgetItem(member_resp.USERNAME))
+        self.table.setItem(row_position, 2, QTableWidgetItem(""))
+
+        row_position = self.table.rowCount()  # 현재 행 개수 확인
+        self.table.insertRow(row_position)  # 새 행 추가
+
+        self.table.setItem(row_position, 0, QTableWidgetItem("Timezone"))
+        self.table.setItem(row_position, 1, QTableWidgetItem(member_resp.TIMEZONE))
+        self.table.setItem(row_position, 2, QTableWidgetItem(""))
+
+        logging.debug("search_oracle_member")
+
+    def setup_db_order(self):
         self.clear_layout()
 
-        # 첫째 라인: Member Name GroupBox + Search 버튼
+        # 첫째 라인
+        first_line_layout = QHBoxLayout()
+
+        # Env 그룹박스
+        self.env_group = QGroupBox("Env")
+        env_layout = QHBoxLayout()
+        self.env_combo = QComboBox()
+        self.env_combo.addItems(["Live", "Stage", "Dev"])
+        self.env_combo.setCurrentText("Dev")
+        env_layout.addWidget(self.env_combo)
+        self.db_combo = QComboBox()
+        self.db_combo.addItems(["FIRST", "SECOND"])
+        self.db_combo.setCurrentText("FIRST")
+        env_layout.addWidget(self.db_combo)
+        self.env_group.setLayout(env_layout)
+        first_line_layout.addWidget(self.env_group)
+
+        # Orader 그룹박스
+        self.name_group = QGroupBox("Name")
         name_layout = QHBoxLayout()
-        self.name_group = QGroupBox("EMP Name")
-        self.name_input = QLineEdit()
-        group_layout = QVBoxLayout()
-        group_layout.addWidget(self.name_input)
-        self.name_group.setLayout(group_layout)
+        self.name_line = QLineEdit()
+        name_layout.addWidget(self.name_line)
+        self.name_group.setLayout(name_layout)
+        first_line_layout.addWidget(self.name_group)
 
-        self.search_button = QPushButton("Search")
-        self.search_button.clicked.connect(self.search_oracle_emp)
+        # Search 버튼
+        self.search_btn = QPushButton("Search")
+        self.search_btn.clicked.connect(self.search_mariadb_order)
+        first_line_layout.addWidget(self.search_btn)
 
-        name_layout.addWidget(self.name_group)
-        name_layout.addWidget(self.search_button)
-
-        # 둘째 라인: Grid Table (Name, Job)
+        # 둘째 라인 - Grid
         self.table = QTableWidget()
-        self.table.setColumnCount(2)
-        self.table.setHorizontalHeaderLabels(["Name", "Job"])
+        self.table.setColumnCount(3)
+        self.table.setHorizontalHeaderLabels(["Column", "Value", "Comment"])
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
-        self.main_layout.insertLayout(1, name_layout)
+        self.main_layout.insertLayout(1, first_line_layout)
         self.main_layout.insertWidget(2, self.table)
+
+    def search_mariadb_order(self):
+
+        env_type = self.env_combo.currentText()
+        db_type = self.db_combo.currentText()
+
+        manager = MariadbTenantManager(self.yaml_loader, env_type, db_type, VENDOR_MARIADB)
+        manager.ensure_connect_info(self.config_loader)
+        order_resp = manager.select_order_info(self.name_line.text())
+
+        if order_resp is None:
+            logging.debug("cannot found order")
+            return
+
+        row_position = self.table.rowCount()  # 현재 행 개수 확인
+        self.table.insertRow(row_position)  # 새 행 추가
+
+        # 새 행에 데이터 추가
+        self.table.setItem(row_position, 0, QTableWidgetItem("Customer Name"))
+        self.table.setItem(row_position, 1, QTableWidgetItem(order_resp.CUSTOMER_NAME))
+        self.table.setItem(row_position, 2, QTableWidgetItem(""))
+
+        row_position = self.table.rowCount()  # 현재 행 개수 확인
+        self.table.insertRow(row_position)  # 새 행 추가
+
+        self.table.setItem(row_position, 0, QTableWidgetItem("Product"))
+        self.table.setItem(row_position, 1, QTableWidgetItem(order_resp.PRODUCT))
+        self.table.setItem(row_position, 2, QTableWidgetItem(""))
+
+        logging.debug("search_mariadb_order")
+
+    def setup_db_host(self):
+        self.clear_layout()
+
+        # 첫째 라인
+        first_line_layout = QHBoxLayout()
+
+        # Orader 그룹박스
+        self.name_group = QGroupBox("Name")
+        name_layout = QHBoxLayout()
+        self.name_line = QLineEdit()
+        name_layout.addWidget(self.name_line)
+        self.name_group.setLayout(name_layout)
+        first_line_layout.addWidget(self.name_group)
+
+        # Search 버튼
+        self.search_btn = QPushButton("Search")
+        self.search_btn.clicked.connect(self.search_sqlite_host)
+        first_line_layout.addWidget(self.search_btn)
+
+        # 둘째 라인 - Grid
+        self.table = QTableWidget()
+        self.table.setColumnCount(3)
+        self.table.setHorizontalHeaderLabels(["Column", "Value", "Comment"])
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+
+        self.main_layout.insertLayout(1, first_line_layout)
+        self.main_layout.insertWidget(2, self.table)
+
+    def search_sqlite_host(self):
+
+        manager = SqliteTenantManager(self.yaml_loader, None, None, VENDOR_SQLITE)
+        manager.ensure_connect_info(self.config_loader)
+        host_resp = manager.select_host_info(self.name_line.text())
+
+        if host_resp is None:
+            logging.debug("cannot found host")
+            return
+
+        row_position = self.table.rowCount()  # 현재 행 개수 확인
+        self.table.insertRow(row_position)  # 새 행 추가
+
+        # 새 행에 데이터 추가
+        self.table.setItem(row_position, 0, QTableWidgetItem("Host Name"))
+        self.table.setItem(row_position, 1, QTableWidgetItem(host_resp.HOST_NAME))
+        self.table.setItem(row_position, 2, QTableWidgetItem(""))
+
+        row_position = self.table.rowCount()  # 현재 행 개수 확인
+        self.table.insertRow(row_position)  # 새 행 추가
+
+        self.table.setItem(row_position, 0, QTableWidgetItem("Ip"))
+        self.table.setItem(row_position, 1, QTableWidgetItem(host_resp.IP))
+        self.table.setItem(row_position, 2, QTableWidgetItem(""))
+
+        logging.debug("search_mariadb_order")
 
     def setup_text_conversion(self):
         self.clear_layout()
@@ -297,34 +460,6 @@ class JbDesk(QMainWindow):
                     sub_item = item.layout().takeAt(0)
                     if sub_item.widget():
                         sub_item.widget().setParent(None)
-
-    def search_sqlite_member(self):
-        name = self.name_input.text().strip()
-        if not name:
-            return
-
-        # SQLAlchemy 검색
-        stmt = select(Member).where(Member.name == name)
-        results = session_sqlite.execute(stmt).scalars().all()
-
-        self.table.setRowCount(len(results))
-        for index, member in enumerate(results):
-            self.table.setItem(index, 0, QTableWidgetItem(member.name))
-            self.table.setItem(index, 1, QTableWidgetItem(str(member.age)))
-
-    def search_oracle_emp(self):
-        name = self.name_input.text().strip()
-        if not name:
-            return
-
-        # SQLAlchemy 검색
-        stmt = select(Emp).where(Emp.name == name)
-        results = session_oracle.execute(stmt).scalars().all()
-
-        self.table.setRowCount(len(results))
-        for index, emp in enumerate(results):
-            self.table.setItem(index, 0, QTableWidgetItem(emp.name))
-            self.table.setItem(index, 1, QTableWidgetItem(str(emp.job)))
 
     def perform_conversion(self):
         text = self.input_text.toPlainText()

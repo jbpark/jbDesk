@@ -3,7 +3,13 @@ build/
 dist/
 __pycache__/
 _settings/
+.vagrant
 *.spec
 *.pyc
 *.conf
 *.db
+*.rpm
+*.vdi
+*.zip
+*.z01
+*.z02

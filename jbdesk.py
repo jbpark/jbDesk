@@ -12,9 +12,10 @@ from PyQt5.QtWidgets import QMenu, QMessageBox, QSystemTrayIcon
 from lib.config.config_loader import ConfigLoader
 from lib.config.yaml_loader import YamlLoader
 from lib.manager.mariadb.mariadb_tenant_manager import MariadbTenantManager
-from lib.manager.oracle.dao.dao_emp import select_emp_info
 from lib.manager.oracle.oracle_tenant_manager import OracleTenantManager
 from lib.manager.sqlite.sqlite_tenant_manager import SqliteTenantManager
+from lib.ui.menu_layout import clear_layout
+from lib.ui.oracle.menu_oracle_emp import setup_oracle_emp, init_menu_oracle_emp, MENU_EMP_INFO
 from lib.util.log_util import convert_log_timezone_line
 from lib.util.string_util import remove_line_spaces, to_camel_case_line, to_snake_case_line, to_pascal_case_line, \
     to_screaming_snake_case_line, to_train_case_line, to_dot_notation_line
@@ -23,7 +24,6 @@ logging.basicConfig(level=logging.DEBUG)
 
 CONFIG_FILE = "jbdesk.conf"
 YAML_FILE = "config.yaml"
-VENDOR_ORACLE = "ORACLE"
 VENDOR_MARIADB = "MARIADB"
 VENDOR_SQLITE = "SQLITE"
 
@@ -132,9 +132,7 @@ class JbDesk(QMainWindow):
 
     def init_menu_db(self, menu_bar):
         db_menu = menu_bar.addMenu("Database")
-        member_info_action = QAction("Member Info", self)
-        member_info_action.triggered.connect(lambda: self.set_function("Member Info"))
-        db_menu.addAction(member_info_action)
+        init_menu_oracle_emp(self, db_menu)
 
         order_info_action = QAction("Order Info", self)
         order_info_action.triggered.connect(lambda: self.set_function("Order Info"))
@@ -170,8 +168,8 @@ class JbDesk(QMainWindow):
 
         if function == "로그 TimeZone 변환":
             self.setup_timezone_conversion()
-        elif function == "Member Info":
-            self.setup_db_member()
+        elif function == MENU_EMP_INFO:
+            setup_oracle_emp(self.yaml_loader, self.config_loader, self.main_layout)
         elif function == "Order Info":
             self.setup_db_order()
         elif function == "Host Info":
@@ -180,114 +178,6 @@ class JbDesk(QMainWindow):
             self.setup_text_conversion()
 
         self.main_layout.insertWidget(0, self.tool_label)
-
-    def setup_db_member(self):
-        self.clear_layout()
-
-        # 첫째 라인
-        first_line_layout = QHBoxLayout()
-
-        # # Env 그룹박스
-        # self.env_group = QGroupBox("Env")
-        # env_layout = QHBoxLayout()
-        # self.env_combo = QComboBox()
-        # self.env_combo.addItems(["Live", "Stage", "Dev"])
-        # self.env_combo.setCurrentText("Dev")
-        # env_layout.addWidget(self.env_combo)
-        # self.db_combo = QComboBox()
-        # self.db_combo.addItems(["TRM", "OEM"])
-        # self.db_combo.setCurrentText("TRM")
-        # env_layout.addWidget(self.db_combo)
-        # self.env_group.setLayout(env_layout)
-        # first_line_layout.addWidget(self.env_group)
-        #
-        # # Member 그룹박스
-        # self.member_group = QGroupBox("Member Uid")
-        # member_layout = QHBoxLayout()
-        # self.member_line = QLineEdit()
-        # member_layout.addWidget(self.member_line)
-        # self.member_group.setLayout(member_layout)
-        # first_line_layout.addWidget(self.member_group)
-
-        # Dataset Name 그룹박스
-        self.dataset_group = QGroupBox("Member Name")
-        dataset_layout = QHBoxLayout()
-        self.dataset_line = QLineEdit()
-        dataset_layout.addWidget(self.dataset_line)
-        self.dataset_group.setLayout(dataset_layout)
-        first_line_layout.addWidget(self.dataset_group)
-
-        # Search 버튼
-        self.search_btn = QPushButton("Search")
-        # self.search_btn.clicked.connect(self.search_oracle_member)
-        self.search_btn.clicked.connect(self.search_test_oracle_member)
-        first_line_layout.addWidget(self.search_btn)
-
-        # 둘째 라인 - Grid
-        self.table = QTableWidget()
-        self.table.setColumnCount(3)
-        self.table.setHorizontalHeaderLabels(["Column", "Value", "Comment"])
-        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-
-        self.main_layout.insertLayout(1, first_line_layout)
-        self.main_layout.insertWidget(2, self.table)
-
-    def search_test_oracle_member(self):
-
-        manager = OracleTenantManager(self.yaml_loader, None, None, VENDOR_ORACLE)
-        manager.ensure_connect_info(self.config_loader)
-        db_resp = select_emp_info(manager.get_db_session(), self.dataset_line.text())
-
-        if db_resp is None:
-            return
-
-        row_position = self.table.rowCount()  # 현재 행 개수 확인
-        self.table.insertRow(row_position)  # 새 행 추가
-
-        # 새 행에 데이터 추가
-        self.table.setItem(row_position, 0, QTableWidgetItem("Name"))
-        self.table.setItem(row_position, 1, QTableWidgetItem(db_resp.NAME))
-        self.table.setItem(row_position, 2, QTableWidgetItem(""))
-
-        row_position = self.table.rowCount()  # 현재 행 개수 확인
-        self.table.insertRow(row_position)  # 새 행 추가
-
-        self.table.setItem(row_position, 0, QTableWidgetItem("Job"))
-        self.table.setItem(row_position, 1, QTableWidgetItem(db_resp.JOB))
-        self.table.setItem(row_position, 2, QTableWidgetItem(""))
-
-        logging.debug("search_oracle_member")
-
-    def search_oracle_member(self):
-
-        env_type = self.env_combo.currentText()
-        db_type = self.db_combo.currentText()
-
-        manager = OracleTenantManager(self.yaml_loader, env_type, db_type, VENDOR_ORACLE)
-
-        manager.ensure_connect_info(self.config_loader)
-        member_resp = manager.select_test_member_info(self.member_line.text(), self.dataset_line.text())
-
-        if member_resp is None:
-            logging.debug("cannot found member")
-            return
-
-        row_position = self.table.rowCount()  # 현재 행 개수 확인
-        self.table.insertRow(row_position)  # 새 행 추가
-
-        # 새 행에 데이터 추가
-        self.table.setItem(row_position, 0, QTableWidgetItem("UserName"))
-        self.table.setItem(row_position, 1, QTableWidgetItem(member_resp.USERNAME))
-        self.table.setItem(row_position, 2, QTableWidgetItem(""))
-
-        row_position = self.table.rowCount()  # 현재 행 개수 확인
-        self.table.insertRow(row_position)  # 새 행 추가
-
-        self.table.setItem(row_position, 0, QTableWidgetItem("Timezone"))
-        self.table.setItem(row_position, 1, QTableWidgetItem(member_resp.TIMEZONE))
-        self.table.setItem(row_position, 2, QTableWidgetItem(""))
-
-        logging.debug("search_oracle_member")
 
     def setup_db_order(self):
         self.clear_layout()
@@ -450,15 +340,7 @@ class JbDesk(QMainWindow):
         self.main_layout.insertWidget(3, self.output_group)
 
     def clear_layout(self):
-        while self.main_layout.count():
-            item = self.main_layout.takeAt(0)
-            if item.widget():
-                item.widget().setParent(None)
-            elif item.layout():
-                while item.layout().count():
-                    sub_item = item.layout().takeAt(0)
-                    if sub_item.widget():
-                        sub_item.widget().setParent(None)
+        clear_layout(self.main_layout)
 
     def perform_conversion(self):
         text = self.input_text.toPlainText()

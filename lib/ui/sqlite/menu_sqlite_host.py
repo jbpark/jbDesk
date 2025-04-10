@@ -14,7 +14,7 @@ VENDOR_SQLITE = "SQLITE"
 MENU_HOST_INFO = "Host Info"
 
 
-def init_menu_sqlite_host(self, db_menu, yaml_loader, config_loader, main_layout):
+def init_menu_sqlite_host(self, db_menu):
     order_info_action = QAction(MENU_HOST_INFO, self)
     order_info_action.triggered.connect(lambda: self.set_function(MENU_HOST_INFO))
     db_menu.addAction(order_info_action)

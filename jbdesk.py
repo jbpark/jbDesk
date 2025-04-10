@@ -129,9 +129,9 @@ class JbDesk(QMainWindow):
 
     def init_menu_db(self, menu_bar):
         db_menu = menu_bar.addMenu("Database")
-        init_menu_oracle_emp(self, db_menu, self.yaml_loader, self.config_loader, self.main_layout)
-        init_menu_mariadb_order(self, db_menu, self.yaml_loader, self.config_loader, self.main_layout)
-        init_menu_sqlite_host(self, db_menu, self.yaml_loader, self.config_loader, self.main_layout)
+        init_menu_oracle_emp(self, db_menu)
+        init_menu_mariadb_order(self, db_menu)
+        init_menu_sqlite_host(self, db_menu)
 
     def init_menu_timezone(self, menu_bar):
         timezone_menu = menu_bar.addMenu("TimeZone")

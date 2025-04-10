@@ -13,7 +13,7 @@ VENDOR_MARIADB = "MARIADB"
 MENU_ORDER_INFO = "Order Info"
 
 
-def init_menu_mariadb_order(self, db_menu, yaml_loader, config_loader, main_layout):
+def init_menu_mariadb_order(self, db_menu):
     order_info_action = QAction(MENU_ORDER_INFO, self)
     order_info_action.triggered.connect(lambda: self.set_function(MENU_ORDER_INFO))
     db_menu.addAction(order_info_action)

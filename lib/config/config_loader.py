@@ -5,11 +5,15 @@ from tkinter import simpledialog
 
 from lib.util.encoding_util import encrypt_cipher_text
 
+# 기본 conf 폴더
+DIR_DEFAULT_CONF = "settings"
+
 
 def get_config_section(env_type, db_type, vendor):
     parts = [env_type, db_type, vendor]
     filtered = [str(p).upper() for p in parts if p is not None]
     return ".".join(filtered)
+
 
 class CustomDialog(simpledialog.Dialog):
     def __init__(self, parent, title, message, isSecure=False):
@@ -91,7 +95,10 @@ def get_config(config_path, section, key):
 
 
 class ConfigLoader:
-    def __init__(self, config_path):
+    def __init__(self, root_path, config_file):
+        self.root_path = root_path
+        self.config_file = config_file
+        config_path = os.path.join(root_path, DIR_DEFAULT_CONF, config_file)
         self.config_path = config_path
 
     def ensure_config(self, section, key, title, message, isSecure=False):

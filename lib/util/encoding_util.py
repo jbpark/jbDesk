@@ -1,6 +1,6 @@
 from cryptography.fernet import Fernet
 
-from lib.models.constants.const_key import LDAP_KEY
+from lib.models.constants.config_key import LDAP_KEY
 
 
 def decrypt_cipher_text(ciphered_text):

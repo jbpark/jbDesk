@@ -11,9 +11,10 @@ from PyQt5.QtWidgets import QMenu, QMessageBox, QSystemTrayIcon
 
 from lib.config.config_loader import ConfigLoader
 from lib.config.yaml_loader import YamlLoader
-from lib.db.mariadb.mariadb_tenant_manager import MariadbTenantManager
-from lib.db.oracle.oracle_tenant_manager import OracleTenantManager
-from lib.db.sqlite.sqlite_tenant_manager import SqliteTenantManager
+from lib.manager.mariadb.mariadb_tenant_manager import MariadbTenantManager
+from lib.manager.oracle.dao.dao_emp import select_emp_info
+from lib.manager.oracle.oracle_tenant_manager import OracleTenantManager
+from lib.manager.sqlite.sqlite_tenant_manager import SqliteTenantManager
 from lib.util.log_util import convert_log_timezone_line
 from lib.util.string_util import remove_line_spaces, to_camel_case_line, to_snake_case_line, to_pascal_case_line, \
     to_screaming_snake_case_line, to_train_case_line, to_dot_notation_line
@@ -40,8 +41,8 @@ class JbDesk(QMainWindow):
         self.init_tray()
 
     def initVariable(self):
-        self.config_loader = ConfigLoader(os.path.join(os.getcwd(), CONFIG_FILE))
-        self.yaml_loader = YamlLoader(os.getcwd(), YAML_FILE)
+        self.yaml_loader = YamlLoader(os.getcwd())
+        self.config_loader = ConfigLoader(os.getcwd(), CONFIG_FILE)
 
     def init_widget(self):
         self.setWindowTitle("JbDesk")
@@ -218,7 +219,7 @@ class JbDesk(QMainWindow):
 
         # Search 버튼
         self.search_btn = QPushButton("Search")
-        #self.search_btn.clicked.connect(self.search_oracle_member)
+        # self.search_btn.clicked.connect(self.search_oracle_member)
         self.search_btn.clicked.connect(self.search_test_oracle_member)
         first_line_layout.addWidget(self.search_btn)
 
@@ -235,11 +236,9 @@ class JbDesk(QMainWindow):
 
         manager = OracleTenantManager(self.yaml_loader, None, None, VENDOR_ORACLE)
         manager.ensure_connect_info(self.config_loader)
-        #member_resp = manager.select_test_member_info(self.member_line.text(), self.dataset_line.text())
-        member_resp = manager.select_test_member_info(self.dataset_line.text())
+        db_resp = select_emp_info(manager.get_db_session(), self.dataset_line.text())
 
-        if member_resp is None:
-            logging.debug("cannot found member")
+        if db_resp is None:
             return
 
         row_position = self.table.rowCount()  # 현재 행 개수 확인
@@ -247,14 +246,14 @@ class JbDesk(QMainWindow):
 
         # 새 행에 데이터 추가
         self.table.setItem(row_position, 0, QTableWidgetItem("Name"))
-        self.table.setItem(row_position, 1, QTableWidgetItem(member_resp.name))
+        self.table.setItem(row_position, 1, QTableWidgetItem(db_resp.NAME))
         self.table.setItem(row_position, 2, QTableWidgetItem(""))
 
         row_position = self.table.rowCount()  # 현재 행 개수 확인
         self.table.insertRow(row_position)  # 새 행 추가
 
-        self.table.setItem(row_position, 0, QTableWidgetItem("Age"))
-        self.table.setItem(row_position, 1, QTableWidgetItem(member_resp.age))
+        self.table.setItem(row_position, 0, QTableWidgetItem("Job"))
+        self.table.setItem(row_position, 1, QTableWidgetItem(db_resp.JOB))
         self.table.setItem(row_position, 2, QTableWidgetItem(""))
 
         logging.debug("search_oracle_member")

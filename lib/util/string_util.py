@@ -71,3 +71,8 @@ def to_train_case_line(text):
 def to_dot_notation_line(text):
     lines = text.strip().split("\n")  # 줄 단위로 분리
     return "\n".join([to_dot_notation(line) for line in lines])
+
+def ends_with_pattern(input_string, pattern):
+    regex_pattern = pattern + "$"
+    match = re.search(regex_pattern, input_string)
+    return bool(match)

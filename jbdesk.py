@@ -5,17 +5,15 @@ import sys
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QAction, QTextEdit,
-                             QVBoxLayout, QWidget, QPushButton, QLabel, QLineEdit,
-                             QGroupBox, QComboBox, QHBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView)
+                             QVBoxLayout, QWidget, QPushButton, QLabel, QGroupBox, QComboBox, QHBoxLayout)
 from PyQt5.QtWidgets import QMenu, QMessageBox, QSystemTrayIcon
 
 from lib.config.config_loader import ConfigLoader
 from lib.config.yaml_loader import YamlLoader
-from lib.manager.mariadb.mariadb_tenant_manager import MariadbTenantManager
-from lib.manager.oracle.oracle_tenant_manager import OracleTenantManager
-from lib.manager.sqlite.sqlite_tenant_manager import SqliteTenantManager
+from lib.ui.mariadb.menu_mariadb_order import init_menu_mariadb_order, setup_mariadb_order, MENU_ORDER_INFO
 from lib.ui.menu_layout import clear_layout
 from lib.ui.oracle.menu_oracle_emp import setup_oracle_emp, init_menu_oracle_emp, MENU_EMP_INFO
+from lib.ui.sqlite.menu_sqlite_host import init_menu_sqlite_host, MENU_HOST_INFO, setup_sqlite_host
 from lib.util.log_util import convert_log_timezone_line
 from lib.util.string_util import remove_line_spaces, to_camel_case_line, to_snake_case_line, to_pascal_case_line, \
     to_screaming_snake_case_line, to_train_case_line, to_dot_notation_line
@@ -24,14 +22,13 @@ logging.basicConfig(level=logging.DEBUG)
 
 CONFIG_FILE = "jbdesk.conf"
 YAML_FILE = "config.yaml"
-VENDOR_MARIADB = "MARIADB"
-VENDOR_SQLITE = "SQLITE"
+
 
 class JbDesk(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.initUI()
         self.initVariable()
+        self.initUI()
 
     def initUI(self):
         self.init_widget()
@@ -132,15 +129,9 @@ class JbDesk(QMainWindow):
 
     def init_menu_db(self, menu_bar):
         db_menu = menu_bar.addMenu("Database")
-        init_menu_oracle_emp(self, db_menu)
-
-        order_info_action = QAction("Order Info", self)
-        order_info_action.triggered.connect(lambda: self.set_function("Order Info"))
-        db_menu.addAction(order_info_action)
-
-        host_info_action = QAction("Host Info", self)
-        host_info_action.triggered.connect(lambda: self.set_function("Host Info"))
-        db_menu.addAction(host_info_action)
+        init_menu_oracle_emp(self, db_menu, self.yaml_loader, self.config_loader, self.main_layout)
+        init_menu_mariadb_order(self, db_menu, self.yaml_loader, self.config_loader, self.main_layout)
+        init_menu_sqlite_host(self, db_menu, self.yaml_loader, self.config_loader, self.main_layout)
 
     def init_menu_timezone(self, menu_bar):
         timezone_menu = menu_bar.addMenu("TimeZone")
@@ -170,141 +161,14 @@ class JbDesk(QMainWindow):
             self.setup_timezone_conversion()
         elif function == MENU_EMP_INFO:
             setup_oracle_emp(self.yaml_loader, self.config_loader, self.main_layout)
-        elif function == "Order Info":
-            self.setup_db_order()
-        elif function == "Host Info":
-            self.setup_db_host()
+        elif function == MENU_ORDER_INFO:
+            setup_mariadb_order(self.yaml_loader, self.config_loader, self.main_layout)
+        elif function == MENU_HOST_INFO:
+            setup_sqlite_host(self.yaml_loader, self.config_loader, self.main_layout)
         else:
             self.setup_text_conversion()
 
         self.main_layout.insertWidget(0, self.tool_label)
-
-    def setup_db_order(self):
-        self.clear_layout()
-
-        # 첫째 라인
-        first_line_layout = QHBoxLayout()
-
-        # Env 그룹박스
-        self.env_group = QGroupBox("Env")
-        env_layout = QHBoxLayout()
-        self.env_combo = QComboBox()
-        self.env_combo.addItems(["Live", "Stage", "Dev"])
-        self.env_combo.setCurrentText("Dev")
-        env_layout.addWidget(self.env_combo)
-        self.db_combo = QComboBox()
-        self.db_combo.addItems(["FIRST", "SECOND"])
-        self.db_combo.setCurrentText("FIRST")
-        env_layout.addWidget(self.db_combo)
-        self.env_group.setLayout(env_layout)
-        first_line_layout.addWidget(self.env_group)
-
-        # Orader 그룹박스
-        self.name_group = QGroupBox("Name")
-        name_layout = QHBoxLayout()
-        self.name_line = QLineEdit()
-        name_layout.addWidget(self.name_line)
-        self.name_group.setLayout(name_layout)
-        first_line_layout.addWidget(self.name_group)
-
-        # Search 버튼
-        self.search_btn = QPushButton("Search")
-        self.search_btn.clicked.connect(self.search_mariadb_order)
-        first_line_layout.addWidget(self.search_btn)
-
-        # 둘째 라인 - Grid
-        self.table = QTableWidget()
-        self.table.setColumnCount(3)
-        self.table.setHorizontalHeaderLabels(["Column", "Value", "Comment"])
-        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-
-        self.main_layout.insertLayout(1, first_line_layout)
-        self.main_layout.insertWidget(2, self.table)
-
-    def search_mariadb_order(self):
-
-        env_type = self.env_combo.currentText()
-        db_type = self.db_combo.currentText()
-
-        manager = MariadbTenantManager(self.yaml_loader, env_type, db_type, VENDOR_MARIADB)
-        manager.ensure_connect_info(self.config_loader)
-        order_resp = manager.select_order_info(self.name_line.text())
-
-        if order_resp is None:
-            logging.debug("cannot found order")
-            return
-
-        row_position = self.table.rowCount()  # 현재 행 개수 확인
-        self.table.insertRow(row_position)  # 새 행 추가
-
-        # 새 행에 데이터 추가
-        self.table.setItem(row_position, 0, QTableWidgetItem("Customer Name"))
-        self.table.setItem(row_position, 1, QTableWidgetItem(order_resp.CUSTOMER_NAME))
-        self.table.setItem(row_position, 2, QTableWidgetItem(""))
-
-        row_position = self.table.rowCount()  # 현재 행 개수 확인
-        self.table.insertRow(row_position)  # 새 행 추가
-
-        self.table.setItem(row_position, 0, QTableWidgetItem("Product"))
-        self.table.setItem(row_position, 1, QTableWidgetItem(order_resp.PRODUCT))
-        self.table.setItem(row_position, 2, QTableWidgetItem(""))
-
-        logging.debug("search_mariadb_order")
-
-    def setup_db_host(self):
-        self.clear_layout()
-
-        # 첫째 라인
-        first_line_layout = QHBoxLayout()
-
-        # Orader 그룹박스
-        self.name_group = QGroupBox("Name")
-        name_layout = QHBoxLayout()
-        self.name_line = QLineEdit()
-        name_layout.addWidget(self.name_line)
-        self.name_group.setLayout(name_layout)
-        first_line_layout.addWidget(self.name_group)
-
-        # Search 버튼
-        self.search_btn = QPushButton("Search")
-        self.search_btn.clicked.connect(self.search_sqlite_host)
-        first_line_layout.addWidget(self.search_btn)
-
-        # 둘째 라인 - Grid
-        self.table = QTableWidget()
-        self.table.setColumnCount(3)
-        self.table.setHorizontalHeaderLabels(["Column", "Value", "Comment"])
-        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-
-        self.main_layout.insertLayout(1, first_line_layout)
-        self.main_layout.insertWidget(2, self.table)
-
-    def search_sqlite_host(self):
-
-        manager = SqliteTenantManager(self.yaml_loader, None, None, VENDOR_SQLITE)
-        manager.ensure_connect_info(self.config_loader)
-        host_resp = manager.select_host_info(self.name_line.text())
-
-        if host_resp is None:
-            logging.debug("cannot found host")
-            return
-
-        row_position = self.table.rowCount()  # 현재 행 개수 확인
-        self.table.insertRow(row_position)  # 새 행 추가
-
-        # 새 행에 데이터 추가
-        self.table.setItem(row_position, 0, QTableWidgetItem("Host Name"))
-        self.table.setItem(row_position, 1, QTableWidgetItem(host_resp.HOST_NAME))
-        self.table.setItem(row_position, 2, QTableWidgetItem(""))
-
-        row_position = self.table.rowCount()  # 현재 행 개수 확인
-        self.table.insertRow(row_position)  # 새 행 추가
-
-        self.table.setItem(row_position, 0, QTableWidgetItem("Ip"))
-        self.table.setItem(row_position, 1, QTableWidgetItem(host_resp.IP))
-        self.table.setItem(row_position, 2, QTableWidgetItem(""))
-
-        logging.debug("search_mariadb_order")
 
     def setup_text_conversion(self):
         self.clear_layout()

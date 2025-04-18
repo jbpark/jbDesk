@@ -1,0 +1,2 @@
+class LogParserType:
+    COMMON = "common"

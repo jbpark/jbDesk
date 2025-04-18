@@ -3,6 +3,11 @@ import warnings
 
 from cryptography.utils import CryptographyDeprecationWarning
 
+# fabric3 패키지는 paramiko 3.0 미만만 지원한다고 명시되어 있는데
+# paramiko 3.0 은 다음 에러가 발생하여 에러 경고를 무시하도록 추가함
+# paramiko\pkey.py:82: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES
+warnings.filterwarnings("ignore", category=CryptographyDeprecationWarning)
+
 from lib.fabric.log.fab_ssh_log_shell import FabSshLogShell
 from lib.manager.fabric.ssh_manager import SshManager
 from lib.manager.process.manger_holder import get_process_manager
@@ -10,17 +15,11 @@ from lib.models.constants.log_step import LogStepSearch
 from lib.models.fabric.fab_connect_info import FabConnectInfo
 from lib.util.config_util import load_service_connect_infos_from_yaml
 
-# fabric3 패키지는 paramiko 3.0 미만만 지원한다고 명시되어 있는데
-# paramiko 3.0 은 다음 에러가 발생하여 에러 경고를 무시하도록 추가함
-# paramiko\pkey.py:82: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES
-warnings.filterwarnings("ignore", category=CryptographyDeprecationWarning)
-
 from lib.models.log.log_level import LogLevel
 from lib.models.log.respone.log_search_response import LogSearchResponse
 from lib.models.constants.env_type import ENV_DEV
 from lib.models.constants.const_response import RespStatus, RespMessage
 from multiprocessing import Process, Lock
-
 
 class LogSearchManager:
     def __init__(self, env, keyword, service_name, level):

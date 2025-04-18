@@ -4,7 +4,10 @@ from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import (QAction, QPushButton, QLineEdit, QComboBox,
                              QGroupBox, QHBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView)
 
+from lib.manager.log.log_search_manager import LogSearchManager
+from lib.manager.log.log_search_scheduler import LogSearchScheduler
 from lib.manager.process.manger_holder import get_shared_list
+from lib.models.constants.service_name_type import ServiceType
 from lib.models.log.log_level import LogLevel
 from lib.ui.menu_layout import clear_layout
 from multiprocessing import Process
@@ -84,22 +87,22 @@ def search_single_api_log(yaml_loader, config_loader, table, tid_line, env_combo
     # keyword = "T2405110733507a666506"
     # keyword = tid_line.text()
 
-    # service_name = TrServiceType.REST_API.value.service_name
-    # manager = TrLogSearchManager(env, db_type, keyword, service_name, LogLevel.DEBUG.value)
-    # scheduler = TrRestLogSearchScheduler(manager, yaml_loader, config_loader)
-    # log_resp = manager.get_log_info(scheduler)
-    #
-    # if log_resp is None or log_resp.logs is None:
-    #     logging.debug("cannot found log")
-    #     return
-    #
-    # for log in log_resp.logs:
-    #     row_position = table.rowCount()  # 현재 행 개수 확인
-    #     table.insertRow(row_position)  # 새 행 추가
-    #
-    #     # 새 행에 데이터 추가
-    #     table.setItem(row_position, 0, QTableWidgetItem(log.host))
-    #     table.setItem(row_position, 1, QTableWidgetItem(log.path))
-    #     table.setItem(row_position, 2, QTableWidgetItem(log.message))
-    #
-    # table.resizeColumnsToContents()
+    service_name = ServiceType.GATEWAY.value.service_name
+    manager = LogSearchManager(env, keyword, service_name, LogLevel.DEBUG.value)
+    scheduler = LogSearchScheduler(manager, yaml_loader, config_loader)
+    log_resp = manager.get_log_info(scheduler)
+
+    if log_resp is None or log_resp.logs is None:
+        logging.debug("cannot found log")
+        return
+
+    for log in log_resp.logs:
+        row_position = table.rowCount()  # 현재 행 개수 확인
+        table.insertRow(row_position)  # 새 행 추가
+
+        # 새 행에 데이터 추가
+        table.setItem(row_position, 0, QTableWidgetItem(log.host))
+        table.setItem(row_position, 1, QTableWidgetItem(log.path))
+        table.setItem(row_position, 2, QTableWidgetItem(log.message))
+
+    table.resizeColumnsToContents()

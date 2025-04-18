@@ -83,3 +83,23 @@ def search_single_api_log(yaml_loader, config_loader, table, tid_line, env_combo
     keyword = "T250408204905517648d0"
     # keyword = "T2405110733507a666506"
     # keyword = tid_line.text()
+
+    # service_name = TrServiceType.REST_API.value.service_name
+    # manager = TrLogSearchManager(env, db_type, keyword, service_name, LogLevel.DEBUG.value)
+    # scheduler = TrRestLogSearchScheduler(manager, yaml_loader, config_loader)
+    # log_resp = manager.get_log_info(scheduler)
+    #
+    # if log_resp is None or log_resp.logs is None:
+    #     logging.debug("cannot found log")
+    #     return
+    #
+    # for log in log_resp.logs:
+    #     row_position = table.rowCount()  # 현재 행 개수 확인
+    #     table.insertRow(row_position)  # 새 행 추가
+    #
+    #     # 새 행에 데이터 추가
+    #     table.setItem(row_position, 0, QTableWidgetItem(log.host))
+    #     table.setItem(row_position, 1, QTableWidgetItem(log.path))
+    #     table.setItem(row_position, 2, QTableWidgetItem(log.message))
+    #
+    # table.resizeColumnsToContents()

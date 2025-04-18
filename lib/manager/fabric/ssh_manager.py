@@ -61,32 +61,34 @@ class SshManager:
         service_connect_info.set_password(ssh_user_info.password)
 
         # gateway
-        ssh_user_info = get_ssh_user_info_from_config(self.config_loader, service_connect_info.get_gateway_host_name())
-        if ssh_user_info is None:
-            exist_config = False
-        else:
-            exist_config = True
-        index = self.get_ssh_user_index(ssh_user_info)
+        gateway_host_name = service_connect_info.get_gateway_host_name()
+        if gateway_host_name is not None:
+            ssh_user_info = get_ssh_user_info_from_config(self.config_loader, gateway_host_name)
+            if ssh_user_info is None:
+                exist_config = False
+            else:
+                exist_config = True
+            index = self.get_ssh_user_index(ssh_user_info)
 
-        if use_private_ip:
-            host_ip = service_connect_info.get_gateway_private_ip()
-        else:
-            host_ip = service_connect_info.get_gateway_public_ip()
+            if use_private_ip:
+                host_ip = service_connect_info.get_gateway_private_ip()
+            else:
+                host_ip = service_connect_info.get_gateway_public_ip()
 
-        if check_user:
-            ssh_user_info = get_ssh_user_info(self.ssh_user_infos, host_ip, index)
+            if check_user:
+                ssh_user_info = get_ssh_user_info(self.ssh_user_infos, host_ip, index)
 
-        if ssh_user_info is None:
-            return False
+            if ssh_user_info is None:
+                return False
 
-        if not exist_config:
-            self.config_loader.set_config(f"SSH.{service_connect_info.get_gateway_host_name()}", ConfigKey.KEY_USER_NAME.key,
-                                          ssh_user_info.user_name)
-            self.config_loader.set_config(f"SSH.{service_connect_info.get_gateway_host_name()}", ConfigKey.KEY_PASSWORD.key,
-                                          ssh_user_info.password)
+            if not exist_config:
+                self.config_loader.set_config(f"SSH.{service_connect_info.get_gateway_host_name()}", ConfigKey.KEY_USER_NAME.key,
+                                              ssh_user_info.user_name)
+                self.config_loader.set_config(f"SSH.{service_connect_info.get_gateway_host_name()}", ConfigKey.KEY_PASSWORD.key,
+                                              ssh_user_info.password)
 
-        service_connect_info.set_gateway_user_name(ssh_user_info.user_name)
-        service_connect_info.set_gateway_password(ssh_user_info.password)
+            service_connect_info.set_gateway_user_name(ssh_user_info.user_name)
+            service_connect_info.set_gateway_password(ssh_user_info.password)
 
         return True
 

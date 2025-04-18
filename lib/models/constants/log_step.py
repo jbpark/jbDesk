@@ -2,8 +2,9 @@ from enum import Enum, unique
 
 @unique
 class LogStepSearch(Enum):
-    FIND_SERVICE = "Find Service"
-    FIND_LOG = "Find Log"
+    GATEWAY = "/home/vagrant/gateway.log"
+    API = "/home/vagrant/api.log"
+    ECHO = "/home/vagrant/echo.log"
 
 # Log Step : Path
 @unique

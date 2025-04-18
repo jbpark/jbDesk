@@ -1,3 +1,5 @@
+from lib.models.constants.const_response import RespStatus, RespMessage
+from lib.models.log.respone.log_search_response import LogSearchResponse
 from lib.util.config_util import load_service_connect_infos_from_yaml, load_ssh_user_infos_from_yaml
 
 
@@ -11,6 +13,8 @@ class BaseLogSearchScheduler:
         self.service_name = manager.service_name
         self.level = manager.level
         self.logs = None
+        self.index = 0
+        self.total = 0
 
         # 전체 main steps
         self.all_main_steps = []
@@ -100,3 +104,31 @@ class BaseLogSearchScheduler:
     def setLogs(self, logs):
         self.logs = logs
 
+    def get_failed_response(self, message):
+        response = LogSearchResponse()
+        response.command_type = "log"
+        response.status = RespStatus.FAILED.value
+        response.message = message
+        response.index = self.index
+        response.total = self.total
+        return response
+
+    def get_success_response(self):
+        response = LogSearchResponse()
+        response.command_type = "log"
+        response.status = RespStatus.SUCCESS.value
+        response.message = RespMessage.SUCCESS.value
+        response.index = self.index
+        response.total = self.total
+        return response
+
+    def get_connect_infos_by_service_name(self, service_name):
+        connect_infos = []
+
+        for item in self.env_connect_infos:
+            if item.service.service_name != service_name:
+                continue
+
+            connect_infos.append(item)
+
+        return connect_infos

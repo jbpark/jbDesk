@@ -87,6 +87,9 @@ class ServiceConnectInfo:
         return f"{self.host.host_name}"
 
     def get_gateway_host_name(self):
+        if self.gateway is None:
+            return None
+
         return f"{self.gateway.host_name}"
 
     def get_gateway_string(self):

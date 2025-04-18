@@ -1,15 +1,18 @@
 SERVICE:
   gateway:
     - host_name: gateway01
+      env: DEV
       log_level: /home/vagrant/gateway.log
       log_parser: common
 
   api:
     - host_name: api01
+      env: DEV
       log_level: /home/vagrant/api.log
       parser: common
 
   echo:
     - host_name: echo01
+      env: DEV
       log_level: /home/vagrant/echo.log
       parser: common

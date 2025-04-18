@@ -1,0 +1,9 @@
+HOST:
+  - host_name: gateway01
+    private_ip: 192.168.56.40
+
+  - host_name: api01
+    private_ip: 192.168.56.41
+
+  - host_name: echo01
+    private_ip: 192.168.56.42

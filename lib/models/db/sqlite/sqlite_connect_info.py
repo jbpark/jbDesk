@@ -2,11 +2,11 @@ import logging
 
 from lib.models.constants.config_key import ConfigKey
 
-SQLITE_CONNECTION_STRING = (
+SQLITE_CONNECT_STRING = (
     'sqlite:///{db_file}'
 )
 
-SQLITE_CONNECTION_KEYS = [ConfigKey.KEY_DB_FILE]
+SQLITE_CONNECT_KEYS = [ConfigKey.KEY_DB_FILE]
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -36,7 +36,7 @@ class SqliteConnectInfo:
         )
 
     def get_connect_string(self):
-        return SQLITE_CONNECTION_STRING.format(
+        return SQLITE_CONNECT_STRING.format(
             db_file=self.db_file,
         )
 

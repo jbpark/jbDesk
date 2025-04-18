@@ -3,12 +3,12 @@ import logging
 from lib.models.constants.config_key import ConfigKey
 from lib.util.encoding_util import decrypt_cipher_text
 
-MARIADB_CONNECTION_STRING = (
+MARIADB_CONNECT_STRING = (
     'mysql+pymysql://{user_name}:{password}@{host_name}:{port}/{db_name}'
 )
 
-MARIADB_CONNECTION_KEYS = [ConfigKey.KEY_USER_NAME, ConfigKey.KEY_PASSWORD, ConfigKey.KEY_HOST_NAME,
-                           ConfigKey.KEY_PORT, ConfigKey.KEY_DB_NAME]
+MARIADB_CONNECT_KEYS = [ConfigKey.KEY_USER_NAME, ConfigKey.KEY_PASSWORD, ConfigKey.KEY_HOST_NAME,
+                        ConfigKey.KEY_PORT, ConfigKey.KEY_DB_NAME]
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -50,7 +50,7 @@ class MariadbConnectInfo:
         )
 
     def get_connect_string(self):
-        return MARIADB_CONNECTION_STRING.format(
+        return MARIADB_CONNECT_STRING.format(
             user_name=self.user_name,
             password=decrypt_cipher_text(self.password),
             host_name=self.host_name,

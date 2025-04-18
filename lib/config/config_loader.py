@@ -79,6 +79,23 @@ def ensure_config(config_path, section, key, title, message, isSecure=False):
 
     return value
 
+def set_config(config_path, section, key, value):
+    config = configparser.ConfigParser()
+
+    if not os.path.exists(config_path):
+        # Config 파일이 없으면 새로 생성
+        with open(config_path, "w") as config_file:
+            config.write(config_file)
+
+    config.read(config_path)
+
+    if not config.has_section(section):
+        config.add_section(section)
+
+    config.set(section, key, value)
+
+    with open(config_path, "w") as config_file:
+        config.write(config_file)
 
 def get_config(config_path, section, key):
     config = configparser.ConfigParser()
@@ -106,3 +123,6 @@ class ConfigLoader:
 
     def get_config(self, section, key):
         return get_config(self.config_path, section, key)
+
+    def set_config(self, section, key, value):
+        return set_config(self.config_path, section, key, value)

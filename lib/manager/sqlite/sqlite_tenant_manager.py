@@ -1,7 +1,7 @@
 import logging
 
 from lib.config.config_loader import get_config_section
-from lib.models.db.sqlite.sqlite_connect_info import get_sqlite_connect_info, SQLITE_CONNECTION_KEYS
+from lib.models.db.sqlite.sqlite_connect_info import get_sqlite_connect_info, SQLITE_CONNECT_KEYS
 from lib.manager.sqlite.sqlite_manager import SqliteManager
 
 logging.basicConfig(level=logging.DEBUG)
@@ -58,7 +58,7 @@ class SqliteTenantManager(SqliteManager):
             # connect info 가 모두 있으면 True
             return True
 
-        for config_key in SQLITE_CONNECTION_KEYS:
+        for config_key in SQLITE_CONNECT_KEYS:
             self.ensure_connect_info_key(config_loader, config_key)
 
         return self.is_valid_connect_info()

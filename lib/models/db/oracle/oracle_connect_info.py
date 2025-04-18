@@ -5,13 +5,13 @@ import cx_Oracle
 from lib.models.constants.config_key import ConfigKey
 from lib.util.encoding_util import decrypt_cipher_text
 
-ORACLE_CONNECTION_STRING = (
+ORACLE_CONNECT_STRING = (
         'oracle+cx_oracle://{user_name}:{password}@' +
         cx_Oracle.makedsn('{host_name}', '{port}', service_name='{service_name}')
 )
 
-ORACLE_CONNECTION_KEYS = [ConfigKey.KEY_USER_NAME, ConfigKey.KEY_PASSWORD, ConfigKey.KEY_HOST_NAME,
-                          ConfigKey.KEY_PORT, ConfigKey.KEY_SERVICE_NAME]
+ORACLE_CONNECT_KEYS = [ConfigKey.KEY_USER_NAME, ConfigKey.KEY_PASSWORD, ConfigKey.KEY_HOST_NAME,
+                       ConfigKey.KEY_PORT, ConfigKey.KEY_SERVICE_NAME]
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -53,7 +53,7 @@ class OracleConnectInfo:
         )
 
     def get_connect_string(self):
-        return ORACLE_CONNECTION_STRING.format(
+        return ORACLE_CONNECT_STRING.format(
             user_name=self.user_name,
             password=decrypt_cipher_text(self.password),
             host_name=self.host_name,

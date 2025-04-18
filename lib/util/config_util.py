@@ -1,32 +1,34 @@
-from lib.models.fabric.host_info import ServiceInfo, get_host_info_by_name, HostInfo
+from lib.models.constants.config_key import ConfigKey
+from lib.models.fabric.host_info import get_host_info_by_name, HostInfo
 from lib.models.fabric.service_connect_info import ServiceConnectInfo
+from lib.models.fabric.service_info import ServiceInfo
+from lib.models.fabric.ssh_user_info import SshUserInfo
 
 
 def load_host_infos_from_yaml(yaml_loader):
     data = yaml_loader.load_config()
 
-    host_info_list = []
+    hosts = data.get("HOST")
+    list = []
+    for index, item in enumerate(hosts):
+        host_name = item.get(ConfigKey.KEY_HOST_NAME.key, "")
+        private_ip = item.get(ConfigKey.KEY_PRIVATE_IP.key, "")
+        public_ip = item.get(ConfigKey.KEY_PUBLIC_IP.key, "")
+        user_name = item.get(ConfigKey.KEY_USER_NAME.key, "")
+        password = item.get(ConfigKey.KEY_PASSWORD.key, "")
+        gateway = item.get(ConfigKey.KEY_GATEWAY.key, "")
 
-    for key, value in data.items():
-        if key.startswith("HOST."):
-            host_name = key.split("HOST.")[1]
-            private_ip = value.get("private_ip", "")
-            public_ip = value.get("public_ip", "")
-            user = value.get("username", "")
-            password = value.get("password", "")
-            gateway = value.get("gateway", "")
+        host_info = HostInfo(
+            host_name=host_name,
+            private_ip=private_ip,
+            public_ip=public_ip,
+            user_name=user_name,
+            password=password,
+            gateway=gateway
+        )
+        list.append(host_info)
 
-            host_info = HostInfo(
-                host_name=host_name,
-                private_ip=private_ip,
-                public_ip=public_ip,
-                user=user,
-                password=password,
-                gateway=gateway
-            )
-            host_info_list.append(host_info)
-
-    return host_info_list
+    return list
 
 
 def get_value_with_default(d: dict, key: str, default_value):
@@ -37,40 +39,60 @@ def get_value_with_default(d: dict, key: str, default_value):
     return d[key]
 
 
-def load_service_connection_infos_from_yaml(yaml_loader):
+def load_service_connect_infos_from_yaml(yaml_loader):
     host_infos = load_host_infos_from_yaml(yaml_loader)
 
     data = yaml_loader.load_config()
+    services = data.get("SERVICE")
 
-    service_connection_infos = []
+    service_connect_infos = []
 
-    for key, value in data.items():
-        if key.startswith("SERVICE."):
-            service_host = key.split("SERVICE.")[1]
-            parts = service_host.split('.', 1)
-            service_name = parts[0]
-            host_name = parts[1] if len(parts) > 1 else None
-            env = value.get("env", "")
-            project = value.get("project", "")
-            group = value.get("group", "")
-            tp_user = value.get("tp_user", "")
-            gateway_name = value.get("gateway", "")
-            access_log = value.get("access_log", "")
-            level_log = value.get("level_log", "")
-            parser = get_value_with_default(value, "parser", "middleware")
+    for key, services in data.items():
+        if key == "SERVICE":
+            for service_name, hosts in services.items():
+                for item in hosts:
+                    host_name = item.get(ConfigKey.KEY_HOST_NAME.key, "")
+                    env = item.get(ConfigKey.KEY_ENV.key, "")
+                    project = item.get(ConfigKey.KEY_PROJECT.key, "")
+                    group = item.get(ConfigKey.KEY_GROUP.key, "")
+                    service = ServiceInfo(service_name, None, None, None, None, None)
+                    host = get_host_info_by_name(host_infos, host_name)
+                    if host is not None:
+                        gateway_name = host.gateway
+                        gateway = get_host_info_by_name(host_infos, gateway_name)
+                    else:
+                        gateway = None
 
-            service = ServiceInfo(service_name, tp_user, access_log, level_log, None, parser)
-            host = get_host_info_by_name(host_infos, host_name)
-            gateway = get_host_info_by_name(host_infos, gateway_name)
+                    service_connect_info = ServiceConnectInfo(
+                        env=env.upper(),
+                        project=project,
+                        group=group,
+                        service=service,
+                        host=host,
+                        gateway=gateway
+                    )
+                    service_connect_infos.append(service_connect_info)
 
-            service_connection_info = ServiceConnectInfo(
-                env=env.upper(),
-                project=project,
-                group=group,
-                service=service,
-                host=host,
-                gateway=gateway
-            )
-            service_connection_infos.append(service_connection_info)
+    return service_connect_infos
 
-    return service_connection_infos
+
+def load_ssh_user_infos_from_yaml(yaml_loader):
+    data = yaml_loader.load_config()
+    users = data.get(f"SSH")
+    list = []
+    for index, item in enumerate(users):
+        ssh_user_info = SshUserInfo(index,
+                                    item.get(ConfigKey.KEY_USER_NAME.key, ""),
+                                    item.get(ConfigKey.KEY_PASSWORD.key, ""))
+        list.append(ssh_user_info)
+
+    return list
+
+def get_ssh_user_info_from_config(config_loader, host_name):
+    user_name = config_loader.get_config(f"SSH.{host_name}", ConfigKey.KEY_USER_NAME.key)
+    password = config_loader.get_config(f"SSH.{host_name}", ConfigKey.KEY_PASSWORD.key)
+
+    if user_name is None or password is None:
+        return None
+
+    return SshUserInfo(0, user_name, password)

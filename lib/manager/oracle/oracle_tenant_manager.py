@@ -2,7 +2,7 @@ import logging
 
 from lib.config.config_loader import get_config_section
 from lib.manager.oracle.oracle_manager import OracleManager
-from lib.models.db.oracle.oracle_connect_info import ORACLE_CONNECTION_KEYS, get_oracle_connect_info
+from lib.models.db.oracle.oracle_connect_info import ORACLE_CONNECT_KEYS, get_oracle_connect_info
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -58,7 +58,7 @@ class OracleTenantManager(OracleManager):
             # connect info 가 모두 있으면 True
             return True
 
-        for config_key in ORACLE_CONNECTION_KEYS:
+        for config_key in ORACLE_CONNECT_KEYS:
             self.ensure_connect_info_key(config_loader, config_key)
 
         return self.is_valid_connect_info()

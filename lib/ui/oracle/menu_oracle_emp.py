@@ -14,7 +14,7 @@ VENDOR_ORACLE = "ORACLE"
 MENU_EMP_INFO = "Emp Info"
 
 
-def init_menu_oracle_emp(self, db_menu, yaml_loader, config_loader, main_layout):
+def init_menu_oracle_emp(self, db_menu):
     member_info_action = QAction(MENU_EMP_INFO, self)
     member_info_action.triggered.connect(lambda: self.set_function(MENU_EMP_INFO))
     db_menu.addAction(member_info_action)

@@ -2,7 +2,7 @@ import logging
 
 from lib.config.config_loader import get_config_section
 from lib.manager.mariadb.mariadb_manager import MariadbManager
-from lib.models.db.mariadb.mariadb_connect_info import get_mariadb_connect_info, MARIADB_CONNECTION_KEYS
+from lib.models.db.mariadb.mariadb_connect_info import get_mariadb_connect_info, MARIADB_CONNECT_KEYS
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -58,7 +58,7 @@ class MariadbTenantManager(MariadbManager):
             # connect info 가 모두 있으면 True
             return True
 
-        for config_key in MARIADB_CONNECTION_KEYS:
+        for config_key in MARIADB_CONNECT_KEYS:
             self.ensure_connect_info_key(config_loader, config_key)
 
         return self.is_valid_connect_info()

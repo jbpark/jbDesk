@@ -76,3 +76,6 @@ def ends_with_pattern(input_string, pattern):
     regex_pattern = pattern + "$"
     match = re.search(regex_pattern, input_string)
     return bool(match)
+
+def is_none_or_empty(s):
+    return s is None or s == ''

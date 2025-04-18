@@ -13,6 +13,12 @@ class ConfigKey(Enum):
     KEY_DB_NAME = ("db_name", False)
     KEY_USER_NAME = ("user_name", False)
     KEY_PASSWORD = ("password", True)
+    KEY_PRIVATE_IP = ("private_ip", False)
+    KEY_PUBLIC_IP = ("public_ip", False)
+    KEY_GATEWAY = ("gateway", False)
+    KEY_ENV = ("env", False)
+    KEY_PROJECT = ("project", False)
+    KEY_GROUP = ("group", False)
 
     def __init__(self, key: str, is_secure: bool):
         self._key = key

@@ -1,3 +1,15 @@
+import warnings
+
+from cryptography.utils import CryptographyDeprecationWarning
+
+from lib.manager.process.manger_holder import set_process_manager
+from lib.ui.log.menu_search_log import init_menu_search_log, MENU_SINGLE_API_LOG, setup_single_api_log
+
+# fabric3 패키지는 paramiko 3.0 미만만 지원한다고 명시되어 있는데
+# paramiko 3.0 은 다음 에러가 발생하여 에러 경고를 무시하도록 추가함
+# paramiko\pkey.py:82: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES
+warnings.filterwarnings("ignore", category=CryptographyDeprecationWarning)
+
 import logging
 import os
 import sys
@@ -10,13 +22,17 @@ from PyQt5.QtWidgets import QMenu, QMessageBox, QSystemTrayIcon
 
 from lib.config.config_loader import ConfigLoader
 from lib.config.yaml_loader import YamlLoader
-from lib.ui.mariadb.menu_mariadb_order import init_menu_mariadb_order, setup_mariadb_order, MENU_ORDER_INFO
+from lib.ui.mariadb.menu_mariadb_order import init_menu_mariadb_order, MENU_ORDER_INFO, setup_mariadb_order
 from lib.ui.menu_layout import clear_layout
-from lib.ui.oracle.menu_oracle_emp import setup_oracle_emp, init_menu_oracle_emp, MENU_EMP_INFO
+from lib.ui.oracle.menu_oracle_emp import init_menu_oracle_emp, MENU_EMP_INFO, setup_oracle_emp
 from lib.ui.sqlite.menu_sqlite_host import init_menu_sqlite_host, MENU_HOST_INFO, setup_sqlite_host
 from lib.util.log_util import convert_log_timezone_line
 from lib.util.string_util import remove_line_spaces, to_camel_case_line, to_snake_case_line, to_pascal_case_line, \
     to_screaming_snake_case_line, to_train_case_line, to_dot_notation_line
+# from trumpia.oracle.menu_oracle_member import init_menu_oracle_member, MENU_MEMBER_INFO, setup_oracle_member
+# from trumpia.ui.log.tr_menu_search_log import init_menu_search_tr_log, MENU_REST_API_LOG, setup_rest_api_log, MENU_MID_API_LOG, \
+#     setup_mid_api_log
+from multiprocessing import freeze_support
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -127,9 +143,16 @@ class JbDesk(QMainWindow):
 
         self.init_menu_db(menu_bar)
 
+        self.init_menu_search_log(menu_bar)
+
+    def init_menu_search_log(self, menu_bar):
+        # init_menu_search_tr_log(self, menu_bar)
+        init_menu_search_log(self, menu_bar)
+
     def init_menu_db(self, menu_bar):
         db_menu = menu_bar.addMenu("Database")
         init_menu_oracle_emp(self, db_menu)
+        # init_menu_oracle_member(self, db_menu)
         init_menu_mariadb_order(self, db_menu)
         init_menu_sqlite_host(self, db_menu)
 
@@ -161,10 +184,18 @@ class JbDesk(QMainWindow):
             self.setup_timezone_conversion()
         elif function == MENU_EMP_INFO:
             setup_oracle_emp(self.yaml_loader, self.config_loader, self.main_layout)
+        # elif function == MENU_MEMBER_INFO:
+        #     setup_oracle_member(self.yaml_loader, self.config_loader, self.main_layout)
         elif function == MENU_ORDER_INFO:
             setup_mariadb_order(self.yaml_loader, self.config_loader, self.main_layout)
         elif function == MENU_HOST_INFO:
             setup_sqlite_host(self.yaml_loader, self.config_loader, self.main_layout)
+        elif function == MENU_SINGLE_API_LOG:
+            setup_single_api_log(self.yaml_loader, self.config_loader, self.main_layout)
+        # elif function == MENU_REST_API_LOG:
+        #     setup_rest_api_log(self.yaml_loader, self.config_loader, self.main_layout)
+        # elif function == MENU_MID_API_LOG:
+        #     setup_mid_api_log(self.yaml_loader, self.config_loader, self.main_layout)
         else:
             self.setup_text_conversion()
 
@@ -232,6 +263,8 @@ class JbDesk(QMainWindow):
 
 
 if __name__ == '__main__':
+    freeze_support()
+    set_process_manager()  # ✅ Manager 인스턴스를 미리 생성해 둠
     app = QApplication(sys.argv)
 
     # 모든 창이 닫혀도 앱이 종료되지 않도록 설정

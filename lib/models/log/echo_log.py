@@ -22,7 +22,7 @@ class EchoLog(BaseLog):
             [
                 LogPattern(RegPattern.WORD, self.set_file), RegPattern.COLON,
                 LogPattern(RegPattern.TIMESTAMP, self.set_date), RegPattern.SPACE,
-                LogPattern(RegPattern.LEVEL, self.set_level), RegPattern.SPACE_MORE,
+                LogPattern(RegPattern.WORD, self.set_level), RegPattern.SPACE_MORE,
                 LogPattern(RegPattern.ANY, self.set_message)
             ]
         ]
@@ -33,7 +33,7 @@ class EchoLog(BaseLog):
                                                              DateUtil.TIME_ZONE_LOCAL)
 
     def set_level(self, level):
-        self.level = level
+        self.level = self.extract_log_level(level)
 
     def set_class_name(self, class_name):
         self.class_name = class_name
@@ -66,3 +66,14 @@ class EchoLog(BaseLog):
         result.message = self.message
 
         return result
+
+def parse_log_test():
+    log = "/home/vagrant/gateway.log:2025-04-08 11:01:10,280 [INFO] TID=db34a6fa-af3d-4aad-a783-6fbbb4b2bf65: Incoming request"
+    echo_log = EchoLog("localhost", log)
+    echo_log.parse_log()
+    display_log = echo_log.get_display_log()
+    print(f"{display_log}")
+
+
+if __name__ == "__main__":
+    parse_log_test()

@@ -11,16 +11,16 @@ class ServiceType(Enum):
         None,
         "/home/vagrant/gateway.log",
         None,
-        LogParserType.COMMON)
+        LogParserType.ECHO)
     API = ServiceInfo(
         "api", "vagrant",
         None,
         "/home/vagrant/api.lo",
         None,
-        LogParserType.COMMON)
+        LogParserType.ECHO)
     ECHO = ServiceInfo(
-        "gateway", "vagrant",
+        "echo", "vagrant",
         None,
         "/home/vagrant/echo.log",
         None,
-        LogParserType.COMMON)
+        LogParserType.ECHO)

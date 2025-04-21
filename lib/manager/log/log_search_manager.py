@@ -4,7 +4,9 @@ import warnings
 from cryptography.utils import CryptographyDeprecationWarning
 
 from lib.manager.log.base.base_log_search_manager import BaseLogSearchManager
+from lib.models.constants.log_parser_type import LogParserType
 from lib.models.constants.service_name_type import ServiceType
+from lib.parser.log_parser import LogParser
 
 # fabric3 패키지는 paramiko 3.0 미만만 지원한다고 명시되어 있는데
 # paramiko 3.0 은 다음 에러가 발생하여 에러 경고를 무시하도록 추가함
@@ -30,8 +32,8 @@ class LogSearchManager(BaseLogSearchManager):
 
     @staticmethod
     def parse_log(parser_name, host, line):
-        print("parse_log")
-
+        parser = LogParser()
+        return parser.parse_log(parser_name, host, line)
 
     def get_logs(self):
         keyword = self.keyword
@@ -87,14 +89,12 @@ class LogSearchManager(BaseLogSearchManager):
                     logging.info("not return_dict[index]")
                     continue
 
-                # if item.service.service_name == ServiceType.GATEWAY.value.service_name:
-                #     parser_name = TrLogParserType.REST_API
-                # elif item.service.service_name == TrServiceType.INFRA_GATEWAY_API.value.service_name:
-                #     parser_name = TrLogParserType.MIDDLEWARE
-                # elif item.service.service_name.startswith(("api-", "db-")):
-                #     parser_name = TrLogParserType.MIDDLEWARE
-                # else:
-                parser_name = item.get_parser_name()
+                if item.service.service_name == ServiceType.GATEWAY.value.service_name or \
+                    item.service.service_name == ServiceType.API.value.service_name or \
+                    item.service.service_name == ServiceType.ECHO.value.service_name:
+                     parser_name = LogParserType.ECHO
+                else:
+                    parser_name = item.get_parser_name()
 
                 lines = return_dict[index].split('\n')
                 for line in lines:

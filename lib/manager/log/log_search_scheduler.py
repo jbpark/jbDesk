@@ -16,8 +16,14 @@ class LogSearchScheduler(BaseLogSearchScheduler):
             self.step_connect_infos = self.get_connect_infos_by_service_name(self.service_name)
             return self.step_connect_infos
         elif main_step == LogStepSearch.API:
-            self.step_connect_infos = self.get_connect_infos_by_service_name(self.api_service_name)
+            self.service_name = "api"
+            self.step_connect_infos = self.get_connect_infos_by_service_name(self.service_name)
             return self.step_connect_infos
+        elif main_step == LogStepSearch.ECHO:
+            self.service_name = "echo"
+            self.step_connect_infos = self.get_connect_infos_by_service_name(self.service_name)
+            return self.step_connect_infos
+
 
         return self.step_connect_infos
 

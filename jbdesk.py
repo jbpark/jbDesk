@@ -3,7 +3,7 @@ import warnings
 from cryptography.utils import CryptographyDeprecationWarning
 
 from lib.manager.process.manger_holder import set_process_manager
-from lib.ui.log.menu_search_log import init_menu_search_log, MENU_SINGLE_API_LOG, setup_single_api_log
+from lib.ui.log.menu_search_log import init_menu_search_log, MENU_ECHO_API_LOG, setup_echo_api_log
 
 # fabric3 패키지는 paramiko 3.0 미만만 지원한다고 명시되어 있는데
 # paramiko 3.0 은 다음 에러가 발생하여 에러 경고를 무시하도록 추가함
@@ -190,8 +190,8 @@ class JbDesk(QMainWindow):
             setup_mariadb_order(self.yaml_loader, self.config_loader, self.main_layout)
         elif function == MENU_HOST_INFO:
             setup_sqlite_host(self.yaml_loader, self.config_loader, self.main_layout)
-        elif function == MENU_SINGLE_API_LOG:
-            setup_single_api_log(self.yaml_loader, self.config_loader, self.main_layout)
+        elif function == MENU_ECHO_API_LOG:
+            setup_echo_api_log(self.yaml_loader, self.config_loader, self.main_layout)
         # elif function == MENU_REST_API_LOG:
         #     setup_rest_api_log(self.yaml_loader, self.config_loader, self.main_layout)
         # elif function == MENU_MID_API_LOG:

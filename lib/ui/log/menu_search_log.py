@@ -16,17 +16,17 @@ logging.basicConfig(level=logging.DEBUG)
 
 VENDOR_MARIADB = "MARIADB"
 
-MENU_SINGLE_API_LOG = "Single API Log"
+MENU_ECHO_API_LOG = "Echo API Log"
 
 g_table = None
 
 def init_menu_search_log(self, menu_bar):
     log_menu = menu_bar.addMenu("Log")
-    single_log_action = QAction(MENU_SINGLE_API_LOG, self)
-    single_log_action.triggered.connect(lambda: self.set_function(MENU_SINGLE_API_LOG))
-    log_menu.addAction(single_log_action)
+    echo_log_action = QAction(MENU_ECHO_API_LOG, self)
+    echo_log_action.triggered.connect(lambda: self.set_function(MENU_ECHO_API_LOG))
+    log_menu.addAction(echo_log_action)
 
-def setup_single_api_log(yaml_loader, config_loader, main_layout):
+def setup_echo_api_log(yaml_loader, config_loader, main_layout):
     clear_layout(main_layout)
 
     # 첫째 라인
@@ -52,7 +52,7 @@ def setup_single_api_log(yaml_loader, config_loader, main_layout):
 
     # Search 버튼
     search_btn = QPushButton("Search")
-    search_btn.clicked.connect(lambda: search_single_api_log(yaml_loader, config_loader, table, tid_line, env_combo))
+    search_btn.clicked.connect(lambda: search_echo_api_log(yaml_loader, config_loader, table, tid_line, env_combo))
     first_line_layout.addWidget(search_btn)
 
     # 둘째 라인 - Grid
@@ -81,7 +81,7 @@ def setup_single_api_log(yaml_loader, config_loader, main_layout):
     main_layout.insertWidget(2, table)
 
 
-def search_single_api_log(yaml_loader, config_loader, table, tid_line, env_combo):
+def search_echo_api_log(yaml_loader, config_loader, table, tid_line, env_combo):
     env = env_combo.currentText()
     keyword = "db34a6fa-af3d-4aad-a783-6fbbb4b2bf65"
     # keyword = "T2405110733507a666506"

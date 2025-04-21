@@ -1,2 +1,2 @@
 class LogParserType:
-    COMMON = "common"
+    ECHO = "common"

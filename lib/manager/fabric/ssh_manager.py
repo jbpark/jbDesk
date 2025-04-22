@@ -4,9 +4,9 @@ from lib.models.constants.config_key import ConfigKey
 from lib.models.fabric.ssh_user_info import SshUserInfo
 from lib.util.config_util import load_ssh_user_infos_from_yaml, get_ssh_user_info_from_config
 from lib.util.ssh_util import get_ssh_user_info
-from lib.util.string_util import is_none_or_empty
 
 logging.basicConfig(level=logging.DEBUG)
+
 
 class SshManager:
     def __init__(self, yaml_loader, config_loader):
@@ -30,7 +30,7 @@ class SshManager:
 
         return 0
 
-    def ensure_service_connect_info(self, service_connect_info, use_private_ip = True, check_user = False):
+    def ensure_service_connect_info(self, service_connect_info, use_private_ip=True, check_user=False):
         ssh_user_info = get_ssh_user_info_from_config(self.config_loader, service_connect_info.get_host_name())
         if ssh_user_info is None:
             exist_config = False
@@ -53,7 +53,8 @@ class SshManager:
             return False
 
         if not exist_config:
-            self.config_loader.set_config(f"SSH.{service_connect_info.get_host_name()}", ConfigKey.KEY_USER_NAME.key, ssh_user_info.user_name)
+            self.config_loader.set_config(f"SSH.{service_connect_info.get_host_name()}", ConfigKey.KEY_USER_NAME.key,
+                                          ssh_user_info.user_name)
             self.config_loader.set_config(f"SSH.{service_connect_info.get_host_name()}", ConfigKey.KEY_PASSWORD.key,
                                           ssh_user_info.password)
 
@@ -82,9 +83,11 @@ class SshManager:
                 return False
 
             if not exist_config:
-                self.config_loader.set_config(f"SSH.{service_connect_info.get_gateway_host_name()}", ConfigKey.KEY_USER_NAME.key,
+                self.config_loader.set_config(f"SSH.{service_connect_info.get_gateway_host_name()}",
+                                              ConfigKey.KEY_USER_NAME.key,
                                               ssh_user_info.user_name)
-                self.config_loader.set_config(f"SSH.{service_connect_info.get_gateway_host_name()}", ConfigKey.KEY_PASSWORD.key,
+                self.config_loader.set_config(f"SSH.{service_connect_info.get_gateway_host_name()}",
+                                              ConfigKey.KEY_PASSWORD.key,
                                               ssh_user_info.password)
 
             service_connect_info.set_gateway_user_name(ssh_user_info.user_name)
@@ -98,7 +101,8 @@ class SshManager:
             return value
 
         value_new = self.config_loader.ensure_config(
-            f"{self.env.upper()}.{host_name}", key.key, f"{self.env.upper()}.{host_name}", f"Input {key.key}!", key.is_secure)
+            f"{self.env.upper()}.{host_name}", key.key, f"{self.env.upper()}.{host_name}", f"Input {key.key}!",
+            key.is_secure)
         if value_new is not None:
             return value_new
 

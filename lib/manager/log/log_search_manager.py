@@ -16,15 +16,10 @@ warnings.filterwarnings("ignore", category=CryptographyDeprecationWarning)
 from lib.fabric.log.fab_ssh_log_shell import FabSshLogShell
 from lib.manager.fabric.ssh_manager import SshManager
 from lib.manager.process.manger_holder import get_process_manager
-from lib.models.constants.log_step import LogStepSearch
 from lib.models.fabric.fab_connect_info import FabConnectInfo
-from lib.util.config_util import load_service_connect_infos_from_yaml
 
-from lib.models.log.log_level import LogLevel
-from lib.models.log.respone.log_search_response import LogSearchResponse
-from lib.models.constants.env_type import ENV_DEV
-from lib.models.constants.const_response import RespStatus, RespMessage
 from multiprocessing import Process, Lock
+
 
 class LogSearchManager(BaseLogSearchManager):
     def __init__(self, env, keyword, service_name, level):
@@ -90,9 +85,9 @@ class LogSearchManager(BaseLogSearchManager):
                     continue
 
                 if item.service.service_name == ServiceType.GATEWAY.value.service_name or \
-                    item.service.service_name == ServiceType.API.value.service_name or \
-                    item.service.service_name == ServiceType.ECHO.value.service_name:
-                     parser_name = LogParserType.ECHO
+                        item.service.service_name == ServiceType.API.value.service_name or \
+                        item.service.service_name == ServiceType.ECHO.value.service_name:
+                    parser_name = LogParserType.ECHO
                 else:
                     parser_name = item.get_parser_name()
 

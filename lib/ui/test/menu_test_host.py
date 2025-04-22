@@ -42,7 +42,7 @@ def setup_test_host(yaml_loader, config_loader, main_layout):
     first_line_layout.addWidget(env_group)
 
     # Orader 그룹박스
-    tid_group = QGroupBox("Tid")
+    tid_group = QGroupBox("Service Name")
     tid_layout = QHBoxLayout()
     tid_line = QLineEdit()
     tid_layout.addWidget(tid_line)
@@ -50,14 +50,14 @@ def setup_test_host(yaml_loader, config_loader, main_layout):
     first_line_layout.addWidget(tid_group)
 
     # Search 버튼
-    search_btn = QPushButton("Search")
+    search_btn = QPushButton("Test")
     search_btn.clicked.connect(lambda: test_host(yaml_loader, config_loader, table, tid_line, env_combo))
     first_line_layout.addWidget(search_btn)
 
     # 둘째 라인 - Grid
     table = QTableWidget()
-    table.setColumnCount(3)
-    table.setHorizontalHeaderLabels(["Host", "Log Path", "Message"])
+    table.setColumnCount(4)
+    table.setHorizontalHeaderLabels(["Project", "Group", "Service Name", "Host Name"])
 
     header = table.horizontalHeader()
 

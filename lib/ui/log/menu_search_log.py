@@ -83,9 +83,9 @@ def setup_echo_api_log(yaml_loader, config_loader, main_layout):
 
 def search_echo_api_log(yaml_loader, config_loader, table, tid_line, env_combo):
     env = env_combo.currentText()
-    keyword = "db34a6fa-af3d-4aad-a783-6fbbb4b2bf65"
+    # keyword = "db34a6fa-af3d-4aad-a783-6fbbb4b2bf65"
     # keyword = "T2405110733507a666506"
-    # keyword = tid_line.text()
+    keyword = tid_line.text()
 
     service_name = ServiceType.GATEWAY.value.service_name
     manager = LogSearchManager(env, keyword, service_name, LogLevel.DEBUG.value)

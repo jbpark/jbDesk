@@ -13,19 +13,19 @@ logging.basicConfig(level=logging.DEBUG)
 
 VENDOR_MARIADB = "MARIADB"
 
-MENU_ECHO_API_LOG = "Echo API Log"
+MENU_TEST_HOST = "Test Host"
 
 g_table = None
 
 
-def init_menu_search_log(self, menu_bar):
-    log_menu = menu_bar.addMenu("Log")
-    echo_log_action = QAction(MENU_ECHO_API_LOG, self)
-    echo_log_action.triggered.connect(lambda: self.set_function(MENU_ECHO_API_LOG))
-    log_menu.addAction(echo_log_action)
+def init_menu_test_host(self, menu_bar):
+    test_menu = menu_bar.addMenu("Test")
+    test_host_action = QAction(MENU_TEST_HOST, self)
+    test_host_action.triggered.connect(lambda: self.set_function(MENU_TEST_HOST))
+    test_menu.addAction(test_host_action)
 
 
-def setup_echo_api_log(yaml_loader, config_loader, main_layout):
+def setup_test_host(yaml_loader, config_loader, main_layout):
     clear_layout(main_layout)
 
     # 첫째 라인
@@ -51,7 +51,7 @@ def setup_echo_api_log(yaml_loader, config_loader, main_layout):
 
     # Search 버튼
     search_btn = QPushButton("Search")
-    search_btn.clicked.connect(lambda: search_echo_api_log(yaml_loader, config_loader, table, tid_line, env_combo))
+    search_btn.clicked.connect(lambda: test_host(yaml_loader, config_loader, table, tid_line, env_combo))
     first_line_layout.addWidget(search_btn)
 
     # 둘째 라인 - Grid
@@ -80,7 +80,7 @@ def setup_echo_api_log(yaml_loader, config_loader, main_layout):
     main_layout.insertWidget(2, table)
 
 
-def search_echo_api_log(yaml_loader, config_loader, table, tid_line, env_combo):
+def test_host(yaml_loader, config_loader, table, tid_line, env_combo):
     env = env_combo.currentText()
     # keyword = "db34a6fa-af3d-4aad-a783-6fbbb4b2bf65"
     # keyword = "T2405110733507a666506"

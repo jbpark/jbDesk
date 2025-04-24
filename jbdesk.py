@@ -4,7 +4,7 @@ from cryptography.utils import CryptographyDeprecationWarning
 
 from lib.manager.process.manger_holder import set_process_manager
 from lib.ui.log.menu_search_log import init_menu_search_log, MENU_ECHO_API_LOG, setup_echo_api_log
-from lib.ui.test.menu_test_host import init_menu_test_host, MENU_TEST_HOST, setup_test_host
+from lib.ui.test.menu_test_host import init_menu_test_service, MENU_TEST_SERVICE, setup_test_service
 
 # fabric3 패키지는 paramiko 3.0 미만만 지원한다고 명시되어 있는데
 # paramiko 3.0 은 다음 에러가 발생하여 에러 경고를 무시하도록 추가함
@@ -146,10 +146,10 @@ class JbDesk(QMainWindow):
 
         self.init_menu_search_log(menu_bar)
 
-        self.init_menu_test_host(menu_bar)
+        self.init_menu_test_service(menu_bar)
 
-    def init_menu_test_host(self, menu_bar):
-        init_menu_test_host(self, menu_bar)
+    def init_menu_test_service(self, menu_bar):
+        init_menu_test_service(self, menu_bar)
 
     def init_menu_search_log(self, menu_bar):
         # init_menu_search_tr_log(self, menu_bar)
@@ -202,8 +202,8 @@ class JbDesk(QMainWindow):
         #     setup_rest_api_log(self.yaml_loader, self.config_loader, self.main_layout)
         # elif function == MENU_MID_API_LOG:
         #     setup_mid_api_log(self.yaml_loader, self.config_loader, self.main_layout)
-        elif function == MENU_TEST_HOST:
-            setup_test_host(self.yaml_loader, self.config_loader, self.main_layout)
+        elif function == MENU_TEST_SERVICE:
+            setup_test_service(self.yaml_loader, self.config_loader, self.main_layout)
         else:
             self.setup_text_conversion()
 

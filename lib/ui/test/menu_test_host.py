@@ -15,19 +15,19 @@ logging.basicConfig(level=logging.DEBUG)
 
 VENDOR_MARIADB = "MARIADB"
 
-MENU_TEST_HOST = "Test Host"
+MENU_TEST_SERVICE = "Test Service"
 
 g_table = None
 
 
-def init_menu_test_host(self, menu_bar):
+def init_menu_test_service(self, menu_bar):
     test_menu = menu_bar.addMenu("Test")
-    test_host_action = QAction(MENU_TEST_HOST, self)
-    test_host_action.triggered.connect(lambda: self.set_function(MENU_TEST_HOST))
-    test_menu.addAction(test_host_action)
+    test_service_action = QAction(MENU_TEST_SERVICE, self)
+    test_service_action.triggered.connect(lambda: self.set_function(MENU_TEST_SERVICE))
+    test_menu.addAction(test_service_action)
 
 
-def setup_test_host(yaml_loader, config_loader, main_layout):
+def setup_test_service(yaml_loader, config_loader, main_layout):
     clear_layout(main_layout)
 
     # 첫째 라인
@@ -53,7 +53,7 @@ def setup_test_host(yaml_loader, config_loader, main_layout):
 
     # Search 버튼
     search_btn = QPushButton("Test")
-    search_btn.clicked.connect(lambda: test_host(yaml_loader, config_loader, table, tid_line, env_combo))
+    search_btn.clicked.connect(lambda: test_service(yaml_loader, config_loader, table, tid_line, env_combo))
     first_line_layout.addWidget(search_btn)
 
     # 둘째 라인 - Grid
@@ -89,8 +89,41 @@ def setup_test_host(yaml_loader, config_loader, main_layout):
     main_layout.insertLayout(1, first_line_layout)
     main_layout.insertWidget(2, table)
 
+    init_test_service(yaml_loader, config_loader, table, tid_line, env_combo)
 
-def test_host(yaml_loader, config_loader, table, tid_line, env_combo):
+def init_test_service(yaml_loader, config_loader, table, tid_line, env_combo):
+    env = env_combo.currentText()
+    # keyword = "db34a6fa-af3d-4aad-a783-6fbbb4b2bf65"
+    # keyword = "T2405110733507a666506"
+    keyword = tid_line.text()
+
+    manager = ServiceTestManager(env)
+    manager.load_info(yaml_loader)
+
+    infos = manager.service_test_infos
+    for item in infos:
+        row_position = table.rowCount()  # 현재 행 개수 확인
+        table.insertRow(row_position)  # 새 행 추가
+
+        checkbox = QCheckBox()
+        checkbox_widget = QWidget()
+        layout = QHBoxLayout(checkbox_widget)
+        layout.addWidget(checkbox)
+        layout.setAlignment(checkbox, Qt.AlignCenter)
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        table.setCellWidget(row_position, 0, checkbox_widget)
+
+        # 새 행에 데이터 추가
+        table.setItem(row_position, 1, QTableWidgetItem(item.service_name))
+        table.setItem(row_position, 2, QTableWidgetItem("Host Name"))
+        table.setItem(row_position, 3, QTableWidgetItem("Project"))
+        table.setItem(row_position, 4, QTableWidgetItem("Group"))
+
+    table.resizeColumnsToContents()
+
+
+def test_service(yaml_loader, config_loader, table, tid_line, env_combo):
     env = env_combo.currentText()
     # keyword = "db34a6fa-af3d-4aad-a783-6fbbb4b2bf65"
     # keyword = "T2405110733507a666506"

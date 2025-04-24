@@ -124,5 +124,12 @@ class ConfigLoader:
     def get_config(self, section, key):
         return get_config(self.config_path, section, key)
 
+    def get_config_with_default(self, section, key, default):
+        value = get_config(self.config_path, section, key)
+        if value is None:
+            return default
+
+        return value
+
     def set_config(self, section, key, value):
         return set_config(self.config_path, section, key, value)

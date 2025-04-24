@@ -7,6 +7,8 @@ from PyQt5.QtCore import Qt
 from lib.manager.log.log_search_manager import LogSearchManager
 from lib.manager.log.log_search_scheduler import LogSearchScheduler
 from lib.manager.test.service_test_manager import ServiceTestManager
+from lib.models.constants.config_key import ConfigKey
+from lib.models.constants.env_type import ENV_LIVE, ENV_STAGE, ENV_DEV
 from lib.models.constants.service_name_type import ServiceType
 from lib.models.log.log_level import LogLevel
 from lib.ui.menu_layout import clear_layout
@@ -26,6 +28,12 @@ def init_menu_test_service(self, menu_bar):
     test_service_action.triggered.connect(lambda: self.set_function(MENU_TEST_SERVICE))
     test_menu.addAction(test_service_action)
 
+def save_env(yaml_loader, config_loader, table, tid_line, env_combo):
+    section = MENU_TEST_SERVICE
+    key = ConfigKey.KEY_ENV.key
+    value = env_combo.currentText()
+    config_loader.set_config(section, key, value)
+    init_test_service(yaml_loader, config_loader, table, tid_line, env_combo)
 
 def setup_test_service(yaml_loader, config_loader, main_layout):
     clear_layout(main_layout)
@@ -37,8 +45,10 @@ def setup_test_service(yaml_loader, config_loader, main_layout):
     env_group = QGroupBox("Env")
     env_layout = QHBoxLayout()
     env_combo = QComboBox()
-    env_combo.addItems(["Live", "Stage", "Dev"])
-    env_combo.setCurrentText("Dev")
+    env_combo.addItems([ENV_LIVE, ENV_STAGE, ENV_DEV])
+    env_save = config_loader.get_config_with_default(MENU_TEST_SERVICE, ConfigKey.KEY_ENV.key, ENV_DEV)
+    env_combo.setCurrentText(env_save)
+    # env_combo.setCurrentText(ENV_DEV)
     env_layout.addWidget(env_combo)
     env_group.setLayout(env_layout)
     first_line_layout.addWidget(env_group)
@@ -50,6 +60,9 @@ def setup_test_service(yaml_loader, config_loader, main_layout):
     tid_layout.addWidget(tid_line)
     tid_group.setLayout(tid_layout)
     first_line_layout.addWidget(tid_group)
+
+    env_combo.currentIndexChanged.connect(
+        lambda: save_env(yaml_loader, config_loader, table, tid_line, env_combo))
 
     # Search 버튼
     search_btn = QPushButton("Test")
@@ -99,6 +112,8 @@ def init_test_service(yaml_loader, config_loader, table, tid_line, env_combo):
 
     manager = ServiceTestManager(env)
     manager.load_info(yaml_loader)
+
+    table.setRowCount(0)
 
     infos = manager.service_test_infos
     for item in infos:

@@ -14,12 +14,17 @@ DATE_PATTERNS = [
     (r'\d{2}/[A-Za-z]{3}/\d{4}:\d{2}:\d{2}:\d{2} [-+]\d{4}', '%d/%b/%Y:%H:%M:%S %z')
 ]
 
-
 def convert_log_timezone(log_text: str, source_timezone: str, dest_timezone: str) -> str:
+    already_converted = []
+
     for pattern, date_format in DATE_PATTERNS:
-        match = re.search(pattern, log_text)
-        if match:
-            datetime_str = match.group()
+        def replace_fn(match):
+            datetime_str = match.group(0)
+
+            # 중복 방지: 이미 변환된 문자열이면 건너뛴다
+            if match.start() in already_converted:
+                return datetime_str
+
             try:
                 dt = datetime.strptime(datetime_str, date_format)
                 if '%z' not in date_format and '%Z' not in date_format:
@@ -27,9 +32,16 @@ def convert_log_timezone(log_text: str, source_timezone: str, dest_timezone: str
                     dt = source_tz.localize(dt)
                 dt = dt.astimezone(pytz.timezone(dest_timezone))
                 new_datetime_str = dt.strftime(date_format)
-                log_text = log_text.replace(datetime_str, new_datetime_str)
-            except ValueError:
-                continue
+
+                # 이 위치는 처리했음 표시
+                already_converted.append(match.start())
+
+                return new_datetime_str
+            except Exception:
+                return datetime_str  # 오류 발생 시 원래 문자열 유지
+
+        log_text = re.sub(pattern, replace_fn, log_text)
+
     return log_text
 
 

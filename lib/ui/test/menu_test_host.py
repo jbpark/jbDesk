@@ -1,10 +1,12 @@
 import logging
 
-from PyQt5.QtWidgets import (QAction, QPushButton, QLineEdit, QComboBox,
+from PyQt5.QtWidgets import (QAction, QPushButton, QLineEdit, QComboBox, QCheckBox, QWidget,
                              QGroupBox, QHBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView)
+from PyQt5.QtCore import Qt
 
 from lib.manager.log.log_search_manager import LogSearchManager
 from lib.manager.log.log_search_scheduler import LogSearchScheduler
+from lib.manager.test.service_test_manager import ServiceTestManager
 from lib.models.constants.service_name_type import ServiceType
 from lib.models.log.log_level import LogLevel
 from lib.ui.menu_layout import clear_layout
@@ -56,25 +58,33 @@ def setup_test_host(yaml_loader, config_loader, main_layout):
 
     # 둘째 라인 - Grid
     table = QTableWidget()
-    table.setColumnCount(4)
-    table.setHorizontalHeaderLabels(["Project", "Group", "Service Name", "Host Name"])
+    table.setColumnCount(5)
+    table.setHorizontalHeaderLabels(["Select", "Service Name", "Host Name", "Project", "Group"])
 
     header = table.horizontalHeader()
 
     # 첫 번째 컬럼: 고정 너비
     header.setSectionResizeMode(0, QHeaderView.Fixed)
-    table.setColumnWidth(0, 100)
+    table.setColumnWidth(0, 50)
+
+    # 두 번째 컬럼: 고정 너비
+    header.setSectionResizeMode(1, QHeaderView.Fixed)
+    table.setColumnWidth(1, 100)
 
     # 두 번째 컬럼: 콘텐츠에 맞게 자동
-    header.setSectionResizeMode(1, QHeaderView.ResizeToContents)
+    header.setSectionResizeMode(2, QHeaderView.ResizeToContents)
+
+    header.setSectionResizeMode(3, QHeaderView.ResizeToContents)
 
     # 세 번째 컬럼: 나머지 공간 채우기
-    header.setSectionResizeMode(2, QHeaderView.Stretch)
+    header.setSectionResizeMode(4, QHeaderView.Stretch)
 
     # 마우스로 컬럼 너비 조절 가능하도록 설정하기
     header.setSectionResizeMode(0, QHeaderView.Interactive)
     header.setSectionResizeMode(1, QHeaderView.Interactive)
     header.setSectionResizeMode(2, QHeaderView.Interactive)
+    header.setSectionResizeMode(3, QHeaderView.Interactive)
+    header.setSectionResizeMode(4, QHeaderView.Interactive)
 
     main_layout.insertLayout(1, first_line_layout)
     main_layout.insertWidget(2, table)
@@ -86,22 +96,47 @@ def test_host(yaml_loader, config_loader, table, tid_line, env_combo):
     # keyword = "T2405110733507a666506"
     keyword = tid_line.text()
 
-    service_name = ServiceType.GATEWAY.value.service_name
-    manager = LogSearchManager(env, keyword, service_name, LogLevel.DEBUG.value)
-    scheduler = LogSearchScheduler(manager, yaml_loader, config_loader)
-    log_resp = manager.get_log_info(scheduler)
+    manager = ServiceTestManager(env)
+    manager.load_info(yaml_loader)
 
-    if log_resp is None or log_resp.logs is None:
-        logging.debug("cannot found log")
-        return
-
-    for log in log_resp.logs:
+    infos = manager.service_test_infos
+    for item in infos:
         row_position = table.rowCount()  # 현재 행 개수 확인
         table.insertRow(row_position)  # 새 행 추가
 
+        checkbox = QCheckBox()
+        checkbox_widget = QWidget()
+        layout = QHBoxLayout(checkbox_widget)
+        layout.addWidget(checkbox)
+        layout.setAlignment(checkbox, Qt.AlignCenter)
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        table.setCellWidget(row_position, 0, checkbox_widget)
+
         # 새 행에 데이터 추가
-        table.setItem(row_position, 0, QTableWidgetItem(log.host))
-        table.setItem(row_position, 1, QTableWidgetItem(log.path))
-        table.setItem(row_position, 2, QTableWidgetItem(log.message))
+        table.setItem(row_position, 1, QTableWidgetItem(item.service_name))
+        table.setItem(row_position, 2, QTableWidgetItem("Host Name"))
+        table.setItem(row_position, 3, QTableWidgetItem("Project"))
+        table.setItem(row_position, 4, QTableWidgetItem("Group"))
 
     table.resizeColumnsToContents()
+
+    # service_name = ServiceType.GATEWAY.value.service_name
+    # manager = LogSearchManager(env, keyword, service_name, LogLevel.DEBUG.value)
+    # scheduler = LogSearchScheduler(manager, yaml_loader, config_loader)
+    # log_resp = manager.get_log_info(scheduler)
+    #
+    # if log_resp is None or log_resp.logs is None:
+    #     logging.debug("cannot found log")
+    #     return
+    #
+    # for log in log_resp.logs:
+    #     row_position = table.rowCount()  # 현재 행 개수 확인
+    #     table.insertRow(row_position)  # 새 행 추가
+    #
+    #     # 새 행에 데이터 추가
+    #     table.setItem(row_position, 0, QTableWidgetItem(log.host))
+    #     table.setItem(row_position, 1, QTableWidgetItem(log.path))
+    #     table.setItem(row_position, 2, QTableWidgetItem(log.message))
+    #
+    # table.resizeColumnsToContents()

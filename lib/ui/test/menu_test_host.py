@@ -131,9 +131,9 @@ def init_test_service(yaml_loader, config_loader, table, tid_line, env_combo):
 
         # 새 행에 데이터 추가
         table.setItem(row_position, 1, QTableWidgetItem(item.service_name))
-        table.setItem(row_position, 2, QTableWidgetItem("Host Name"))
-        table.setItem(row_position, 3, QTableWidgetItem("Project"))
-        table.setItem(row_position, 4, QTableWidgetItem("Group"))
+        table.setItem(row_position, 2, QTableWidgetItem(item.host_name))
+        table.setItem(row_position, 3, QTableWidgetItem(item.project))
+        table.setItem(row_position, 4, QTableWidgetItem(item.group))
 
     table.resizeColumnsToContents()
 
@@ -163,9 +163,9 @@ def test_service(yaml_loader, config_loader, table, tid_line, env_combo):
 
         # 새 행에 데이터 추가
         table.setItem(row_position, 1, QTableWidgetItem(item.service_name))
-        table.setItem(row_position, 2, QTableWidgetItem("Host Name"))
-        table.setItem(row_position, 3, QTableWidgetItem("Project"))
-        table.setItem(row_position, 4, QTableWidgetItem("Group"))
+        table.setItem(row_position, 2, QTableWidgetItem(item.host_name))
+        table.setItem(row_position, 3, QTableWidgetItem(item.project))
+        table.setItem(row_position, 4, QTableWidgetItem(item.group))
 
     table.resizeColumnsToContents()
 

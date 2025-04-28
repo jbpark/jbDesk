@@ -6,3 +6,5 @@ class ServiceInfo:
         self.log_path_level = log_path_level
         self.urls = urls
         self.parser_name = parser_name
+        self.project = None
+        self.group = None

@@ -16,6 +16,9 @@ class BaseServiceTestManager:
                 continue
 
             service_test_info = ServiceTestInfo(item.service.service_name)
+            service_test_info.host_name = item.get_host_name()
+            service_test_info.project = item.project
+            service_test_info.group = item.group
 
             self.service_test_infos.append(service_test_info)
 

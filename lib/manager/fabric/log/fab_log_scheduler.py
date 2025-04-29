@@ -1,10 +1,10 @@
-from lib.manager.log.base.base_log_search_scheduler import BaseLogSearchScheduler
+from lib.manager.fabric.base.base_fab_scheduler import BaseFabScheduler
 from lib.models.constants.const_response import RespMessage
 from lib.models.constants.log_step import LogStepSearch
 from lib.models.constants.service_name_type import ServiceType
 
 
-class LogSearchScheduler(BaseLogSearchScheduler):
+class FabLogScheduler(BaseFabScheduler):
     def __init__(self, manager, yaml_loader, config_loader):
         super().__init__(manager, yaml_loader, config_loader)
         self.step_connect_info = None

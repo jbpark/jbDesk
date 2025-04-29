@@ -4,13 +4,11 @@ from PyQt5.QtWidgets import (QAction, QPushButton, QLineEdit, QComboBox, QCheckB
                              QGroupBox, QHBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView)
 from PyQt5.QtCore import Qt
 
-from lib.manager.log.log_search_manager import LogSearchManager
-from lib.manager.log.log_search_scheduler import LogSearchScheduler
+from lib.manager.fabric.command.fab_command_manager import FabCommandManager
+from lib.manager.fabric.command.fab_command_scheduler import FabCommandScheduler
 from lib.manager.test.service_test_manager import ServiceTestManager
 from lib.models.constants.config_key import ConfigKey
 from lib.models.constants.env_type import ENV_LIVE, ENV_STAGE, ENV_DEV
-from lib.models.constants.service_name_type import ServiceType
-from lib.models.log.log_level import LogLevel
 from lib.ui.menu_layout import clear_layout
 
 logging.basicConfig(level=logging.DEBUG)
@@ -170,13 +168,13 @@ def test_service(yaml_loader, config_loader, table, tid_line, env_combo):
     table.resizeColumnsToContents()
 
     # service_name = ServiceType.GATEWAY.value.service_name
-    # manager = LogSearchManager(env, keyword, service_name, LogLevel.DEBUG.value)
-    # scheduler = LogSearchScheduler(manager, yaml_loader, config_loader)
-    # log_resp = manager.get_log_info(scheduler)
-    #
-    # if log_resp is None or log_resp.logs is None:
-    #     logging.debug("cannot found log")
-    #     return
+    manager = FabCommandManager(env, None, None, None)
+    scheduler = FabCommandScheduler(manager, yaml_loader, config_loader)
+    resp = manager.get_result(scheduler)
+
+    if resp is None or resp.logs is None:
+        logging.debug("cannot found result")
+        return
     #
     # for log in log_resp.logs:
     #     row_position = table.rowCount()  # 현재 행 개수 확인

@@ -15,7 +15,7 @@ from lib.models.constants.env_type import ENV_DEV
 from lib.models.constants.const_response import RespStatus, RespMessage
 
 
-class BaseLogSearchManager:
+class BaseFabManager:
     def __init__(self, env, keyword, service_name, level):
         self.env = env.upper()
         self.keyword = keyword

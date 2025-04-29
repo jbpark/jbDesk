@@ -3,8 +3,8 @@ import logging
 from PyQt5.QtWidgets import (QAction, QPushButton, QLineEdit, QComboBox,
                              QGroupBox, QHBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView)
 
-from lib.manager.log.log_search_manager import LogSearchManager
-from lib.manager.log.log_search_scheduler import LogSearchScheduler
+from lib.manager.fabric.log.fab_log_manager import FabLogManager
+from lib.manager.fabric.log.fab_log_scheduler import FabLogScheduler
 from lib.models.constants.service_name_type import ServiceType
 from lib.models.log.log_level import LogLevel
 from lib.ui.menu_layout import clear_layout
@@ -87,8 +87,8 @@ def search_echo_api_log(yaml_loader, config_loader, table, tid_line, env_combo):
     keyword = tid_line.text()
 
     service_name = ServiceType.GATEWAY.value.service_name
-    manager = LogSearchManager(env, keyword, service_name, LogLevel.DEBUG.value)
-    scheduler = LogSearchScheduler(manager, yaml_loader, config_loader)
+    manager = FabLogManager(env, keyword, service_name, LogLevel.DEBUG.value)
+    scheduler = FabLogScheduler(manager, yaml_loader, config_loader)
     log_resp = manager.get_log_info(scheduler)
 
     if log_resp is None or log_resp.logs is None:

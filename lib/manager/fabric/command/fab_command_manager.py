@@ -1,17 +1,21 @@
+from lib.fabric.command.fab_ssh_command_shell import FabSshCommandShell
+from lib.manager.fabric.base.base_fab_manager import BaseFabManager
+from lib.models.constants.const_response import RespStatus
 import logging
 import warnings
 
 from cryptography.utils import CryptographyDeprecationWarning
 
-from lib.manager.log.base.base_log_search_manager import BaseLogSearchManager
-from lib.models.constants.log_parser_type import LogParserType
-from lib.models.constants.service_name_type import ServiceType
-from lib.parser.log_parser import LogParser
-
 # fabric3 패키지는 paramiko 3.0 미만만 지원한다고 명시되어 있는데
 # paramiko 3.0 은 다음 에러가 발생하여 에러 경고를 무시하도록 추가함
 # paramiko\pkey.py:82: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES
 warnings.filterwarnings("ignore", category=CryptographyDeprecationWarning)
+
+from lib.util.config_util import load_service_connect_infos_from_yaml
+
+from lib.models.log.respone.log_search_response import LogSearchResponse
+from lib.models.constants.env_type import ENV_DEV
+from lib.models.constants.const_response import RespStatus, RespMessage
 
 from lib.fabric.log.fab_ssh_log_shell import FabSshLogShell
 from lib.manager.fabric.ssh_manager import SshManager
@@ -20,17 +24,32 @@ from lib.models.fabric.fab_connect_info import FabConnectInfo
 
 from multiprocessing import Process, Lock
 
-
-class LogSearchManager(BaseLogSearchManager):
+class FabCommandManager(BaseFabManager):
     def __init__(self, env, keyword, service_name, level):
         super().__init__(env, keyword, service_name, level)
 
-    @staticmethod
-    def parse_log(parser_name, host, line):
-        parser = LogParser()
-        return parser.parse_log(parser_name, host, line)
+    def get_result(self, scheduler):
+        self.scheduler = scheduler
+        self.yaml_loader = scheduler.yaml_loader
+        self.config_loader = scheduler.config_loader
+        response = self.scheduler.schedule_steps()
+        if response.status != RespStatus.SUCCESS.value:
+            logging.warn(f"response:{response}")
+            return response
 
-    def get_logs(self):
+        response = LogSearchResponse()
+        response.command_type = "log"
+        response.status = RespStatus.SUCCESS.value
+        response.message = RespMessage.SUCCESS.value
+        if self.step is not None:
+            response.step = self.step.value
+
+        response.logs = self.get_fab_result()
+        response.index = self.total
+        response.total = self.total
+        return response
+
+    def get_fab_result(self):
         keyword = self.keyword
 
         process_manager = get_process_manager()
@@ -66,9 +85,9 @@ class LogSearchManager(BaseLogSearchManager):
                                                   service_connect_info.get_host_ip(),
                                                   service_connect_info.get_host_user_name(),
                                                   service_connect_info.get_host_password())
-                fab_ssh_log_shell = FabSshLogShell(lock, self.scheduler, fab_connect_info)
+                fab_ssh_command_shell = FabSshCommandShell(lock, self.scheduler, fab_connect_info)
 
-                p = Process(target=fab_ssh_log_shell.get_search_log, args=(index, return_dict, keyword))
+                p = Process(target=fab_ssh_command_shell.get_command_result, args=(index, return_dict, keyword))
 
                 p.start()
                 process_list.append(p)
@@ -78,33 +97,20 @@ class LogSearchManager(BaseLogSearchManager):
 
             parsed_logs = []
 
-            for index, item in enumerate(service_connect_infos):
-
-                if not return_dict[index]:
-                    logging.info("not return_dict[index]")
-                    continue
-
-                if item.service.service_name == ServiceType.GATEWAY.value.service_name or \
-                        item.service.service_name == ServiceType.API.value.service_name or \
-                        item.service.service_name == ServiceType.ECHO.value.service_name:
-                    parser_name = LogParserType.ECHO
-                else:
-                    parser_name = item.get_parser_name()
-
-                lines = return_dict[index].split('\n')
-                for line in lines:
-                    log = self.parse_log(parser_name, item.get_host_name(), line)
-                    if log:
-                        # search_log = SearchLog()
-                        # search_log.searchRequest = search_request
-                        # search_log.host = host.name
-                        # search_log.log = line
-                        # search_log.save()
-                        display_log = log.get_display_log()
-                        # display_log.id = search_log.pk
-                        logs.append(display_log)
-                        parsed_logs.append(log)
-
-            self.scheduler.setLogs(parsed_logs)
+            # for index, item in enumerate(service_connect_infos):
+            #
+            #     if not return_dict[index]:
+            #         logging.info("not return_dict[index]")
+            #         continue
+            #
+            #     lines = return_dict[index].split('\n')
+            #     for line in lines:
+            #         log = self.parse_log(parser_name, item.get_host_name(), line)
+            #         if log:
+            #             display_log = log.get_display_log()
+            #             logs.append(display_log)
+            #             parsed_logs.append(log)
+            #
+            # self.scheduler.setLogs(parsed_logs)
 
         return logs

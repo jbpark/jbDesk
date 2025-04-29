@@ -3,7 +3,7 @@ from lib.models.log.respone.log_search_response import LogSearchResponse
 from lib.util.config_util import load_service_connect_infos_from_yaml, load_ssh_user_infos_from_yaml
 
 
-class BaseLogSearchScheduler:
+class BaseFabScheduler:
     def __init__(self, manager, yaml_loader, config_loader):
         self.manager = manager
         self.yaml_loader = yaml_loader

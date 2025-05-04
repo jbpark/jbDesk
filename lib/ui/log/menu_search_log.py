@@ -49,6 +49,9 @@ def setup_echo_api_log(yaml_loader, config_loader, main_layout):
     tid_group.setLayout(tid_layout)
     first_line_layout.addWidget(tid_group)
 
+    keyword = "db34a6fa-af3d-4aad-a783-6fbbb4b2bf65"
+    tid_line.setText(keyword)
+
     # Search 버튼
     search_btn = QPushButton("Search")
     search_btn.clicked.connect(lambda: search_echo_api_log(yaml_loader, config_loader, table, tid_line, env_combo))
@@ -82,8 +85,10 @@ def setup_echo_api_log(yaml_loader, config_loader, main_layout):
 
 def search_echo_api_log(yaml_loader, config_loader, table, tid_line, env_combo):
     env = env_combo.currentText()
-    # keyword = "db34a6fa-af3d-4aad-a783-6fbbb4b2bf65"
+    keyword = "db34a6fa-af3d-4aad-a783-6fbbb4b2bf65"
     # keyword = "T2405110733507a666506"
+    tid_line.setText(keyword)
+    tid_line.update()
     keyword = tid_line.text()
 
     service_name = ServiceType.GATEWAY.value.service_name

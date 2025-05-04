@@ -91,6 +91,7 @@ class FabTestManager(BaseFabManager):
         lock = Lock()
         process_list = []
         unique_service_dict = {}
+        unique_os_info_dict = {}
 
         logging.info("exist_main_step")
 
@@ -140,7 +141,8 @@ class FabTestManager(BaseFabManager):
                     logging.info("not return_dict[index]")
                     continue
 
-                unique_service_dict[item.service.service_name].os_info = return_dict[index]
+                # unique_service_dict[item.service.service_name].os_info = return_dict[index]
+                unique_os_info_dict[item.host.host_name] = return_dict[index]
 
                 # lines = return_dict[index].split('\n')
                 # for line in lines:
@@ -151,5 +153,12 @@ class FabTestManager(BaseFabManager):
                 #         parsed_logs.append(log)
 
             # self.scheduler.setLogs(parsed_logs)
+
+        # for index, item in enumerate(service_connect_infos):
+
+        for service_name, item in unique_service_dict.items():
+            host_name = item.connect_info.host.host_name
+            if host_name in unique_os_info_dict:
+                item.os_info = unique_os_info_dict[host_name]
 
         return list(unique_service_dict.values())

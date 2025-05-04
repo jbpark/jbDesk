@@ -1,10 +1,13 @@
-from lib.fabric.command.fab_ssh_command_shell import FabSshCommandShell
+from lib.fabric.test.fab_ssh_test_shell import FabSshTestShell
 from lib.manager.fabric.base.base_fab_manager import BaseFabManager
 from lib.models.constants.const_response import RespStatus
 import logging
 import warnings
 
 from cryptography.utils import CryptographyDeprecationWarning
+
+from lib.models.fabric.test_info import TestInfo
+from lib.models.test.service_test_info import ServiceTestInfo
 
 # fabric3 패키지는 paramiko 3.0 미만만 지원한다고 명시되어 있는데
 # paramiko 3.0 은 다음 에러가 발생하여 에러 경고를 무시하도록 추가함
@@ -24,11 +27,41 @@ from lib.models.fabric.fab_connect_info import FabConnectInfo
 
 from multiprocessing import Process, Lock
 
-class FabCommandManager(BaseFabManager):
+class FabTestManager(BaseFabManager):
     def __init__(self, env, keyword, service_name, level):
         super().__init__(env, keyword, service_name, level)
+        self.service_test_infos = []
 
-    def get_result(self, scheduler):
+    def load_info(self, yaml_loader):
+        self.all_connect_infos = load_service_connect_infos_from_yaml(yaml_loader)
+
+        for item in self.all_connect_infos:
+            if item.env != self.env:
+                continue
+
+            service_test_info = ServiceTestInfo(item.service.service_name)
+            service_test_info.host_name = item.get_host_name()
+            service_test_info.project = item.project
+            service_test_info.group = item.group
+
+            self.service_test_infos.append(service_test_info)
+
+        print("load_info")
+
+    def get_data(self, scheduler):
+        self.scheduler = scheduler
+        response = LogSearchResponse()
+        response.command_type = "log"
+        response.status = RespStatus.SUCCESS.value
+        response.message = RespMessage.SUCCESS.value
+        result = []
+        for item in self.scheduler.env_connect_infos:
+            result.append(TestInfo(item))
+        response.logs = result
+        return response
+
+
+    def get_test_data(self, scheduler):
         self.scheduler = scheduler
         self.yaml_loader = scheduler.yaml_loader
         self.config_loader = scheduler.config_loader
@@ -57,9 +90,13 @@ class FabCommandManager(BaseFabManager):
 
         lock = Lock()
         process_list = []
-        logs = []
+        unique_service_dict = {}
 
         logging.info("exist_main_step")
+
+        for item in self.scheduler.env_connect_infos:
+            unique_service_dict[item.service.service_name] = TestInfo(item)
+
         while self.scheduler.exist_main_step():
             current_main_step = self.scheduler.get_next_main_step()
             if current_main_step is None:
@@ -85,9 +122,9 @@ class FabCommandManager(BaseFabManager):
                                                   service_connect_info.get_host_ip(),
                                                   service_connect_info.get_host_user_name(),
                                                   service_connect_info.get_host_password())
-                fab_ssh_command_shell = FabSshCommandShell(lock, self.scheduler, fab_connect_info)
+                fab_ssh_test_shell = FabSshTestShell(lock, self.scheduler, fab_connect_info)
 
-                p = Process(target=fab_ssh_command_shell.get_command_result, args=(index, return_dict, keyword))
+                p = Process(target=fab_ssh_test_shell.get_result, args=(index, return_dict, keyword))
 
                 p.start()
                 process_list.append(p)
@@ -97,20 +134,22 @@ class FabCommandManager(BaseFabManager):
 
             parsed_logs = []
 
-            # for index, item in enumerate(service_connect_infos):
-            #
-            #     if not return_dict[index]:
-            #         logging.info("not return_dict[index]")
-            #         continue
-            #
-            #     lines = return_dict[index].split('\n')
-            #     for line in lines:
-            #         log = self.parse_log(parser_name, item.get_host_name(), line)
-            #         if log:
-            #             display_log = log.get_display_log()
-            #             logs.append(display_log)
-            #             parsed_logs.append(log)
-            #
+            for index, item in enumerate(service_connect_infos):
+
+                if not return_dict[index]:
+                    logging.info("not return_dict[index]")
+                    continue
+
+                unique_service_dict[item.service.service_name].os_info = return_dict[index]
+
+                # lines = return_dict[index].split('\n')
+                # for line in lines:
+                #     log = self.parse_log(parser_name, item.get_host_name(), line)
+                #     if log:
+                #         display_log = log.get_display_log()
+                #         logs.append(display_log)
+                #         parsed_logs.append(log)
+
             # self.scheduler.setLogs(parsed_logs)
 
-        return logs
+        return list(unique_service_dict.values())

@@ -1,6 +1,8 @@
-from lib.fabric.command.ssh_command_shell import SshCommandShell
+from lib.fabric.test.ssh_test_shell import SshTestShell
 from lib.fabric.fab_ssh_shell import FabSshShell
 import logging
+
+from lib.models.constants.test_step import TestStep
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -14,7 +16,7 @@ from lib.util.encoding_util import decrypt_cipher_text
 
 logging.basicConfig(level=logging.DEBUG)
 
-class FabSshCommandShell(FabSshShell):
+class FabSshTestShell(FabSshShell):
     def __init__(self, lock, scheduler, fab_connect_info):
         super().__init__(lock, scheduler, fab_connect_info)
         self.ssh_command_shell = None
@@ -47,11 +49,9 @@ class FabSshCommandShell(FabSshShell):
                 connect_kwargs={"password": decrypt_cipher_text(self.fab_connect_info.password)},
             )
 
-        self.ssh_command_shell = SshCommandShell(self.lock, self.scheduler, fab_connect)
+        self.ssh_command_shell = SshTestShell(self.lock, self.scheduler, fab_connect)
 
-    def get_command_result(self, proc_id, return_dict, keyword):
-        log = None
-
+    def get_result(self, proc_id, return_dict, keyword):
         # paramiko 로그 메시지 줄이기
         logging.getLogger("paramiko").setLevel(logging.WARNING)
         logging.getLogger("invoke").setLevel(logging.WARNING)
@@ -79,13 +79,16 @@ class FabSshCommandShell(FabSshShell):
                 connect_kwargs={"password": decrypt_cipher_text(self.fab_connect_info.password)},
             )
 
-        self.ssh_log_shell = SshLogShell(self.lock, self.scheduler, fab_connect)
+        self.ssh_test_shell = SshTestShell(self.lock, self.scheduler, fab_connect)
 
         current_main_step = self.scheduler.get_current_main_step()
         if current_main_step is None:
             return return_dict
 
-        log = self.ssh_log_shell.grep_keyword_in_file_path(keyword, current_main_step.value)
+        if current_main_step == TestStep.OS_INFO:
+            log = self.ssh_test_shell.get_os_info()
+        else:
+            log = None
 
         # if log is None:
         #     log = ""

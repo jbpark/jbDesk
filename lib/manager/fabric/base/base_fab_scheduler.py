@@ -132,3 +132,14 @@ class BaseFabScheduler:
             connect_infos.append(item)
 
         return connect_infos
+
+    def get_connect_infos_by_host(self):
+        unique_hosts_dict = {}
+        for item in self.env_connect_infos:
+            if item.host.host_name not in unique_hosts_dict:
+                unique_hosts_dict[item.host.host_name] = item
+
+        # 중복 제거된 새로운 리스트
+        connect_infos = list(unique_hosts_dict.values())
+
+        return connect_infos

@@ -146,6 +146,7 @@ class JbDesk(QMainWindow):
 
         self.init_menu_search_log(menu_bar)
 
+        #self.init_menu_test_service(menu_bar)
         self.init_menu_test_service(menu_bar)
 
     def init_menu_test_service(self, menu_bar):
@@ -204,6 +205,8 @@ class JbDesk(QMainWindow):
         #     setup_mid_api_log(self.yaml_loader, self.config_loader, self.main_layout)
         elif function == MENU_TEST_SERVICE:
             setup_test_service(self.yaml_loader, self.config_loader, self.main_layout)
+        # elif function == MENU_TEST_TR_SERVICE:
+        #    setup_test_tr_service(self.yaml_loader, self.config_loader, self.main_layout)
         else:
             self.setup_text_conversion()
 

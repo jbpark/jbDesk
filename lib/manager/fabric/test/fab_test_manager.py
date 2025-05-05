@@ -1,12 +1,12 @@
-from lib.fabric.test.fab_ssh_test_shell import FabSshTestShell
-from lib.manager.fabric.base.base_fab_manager import BaseFabManager
-from lib.models.constants.const_response import RespStatus
 import logging
 import warnings
 
 from cryptography.utils import CryptographyDeprecationWarning
 
-from lib.models.fabric.test_info import TestInfo
+from lib.fabric.test.fab_ssh_test_shell import FabSshTestShell
+from lib.manager.fabric.base.base_fab_manager import BaseFabManager
+from lib.models.constants.test_result_type import TestResultType
+from lib.models.fabric.test_connect_info import TestConnectInfo
 from lib.models.test.service_test_info import ServiceTestInfo
 
 # fabric3 패키지는 paramiko 3.0 미만만 지원한다고 명시되어 있는데
@@ -17,15 +17,14 @@ warnings.filterwarnings("ignore", category=CryptographyDeprecationWarning)
 from lib.util.config_util import load_service_connect_infos_from_yaml
 
 from lib.models.log.respone.log_search_response import LogSearchResponse
-from lib.models.constants.env_type import ENV_DEV
 from lib.models.constants.const_response import RespStatus, RespMessage
 
-from lib.fabric.log.fab_ssh_log_shell import FabSshLogShell
 from lib.manager.fabric.ssh_manager import SshManager
 from lib.manager.process.manger_holder import get_process_manager
 from lib.models.fabric.fab_connect_info import FabConnectInfo
 
 from multiprocessing import Process, Lock
+
 
 class FabTestManager(BaseFabManager):
     def __init__(self, env, keyword, service_name, level):
@@ -56,10 +55,9 @@ class FabTestManager(BaseFabManager):
         response.message = RespMessage.SUCCESS.value
         result = []
         for item in self.scheduler.env_connect_infos:
-            result.append(TestInfo(item))
+            result.append(TestConnectInfo(item))
         response.logs = result
         return response
-
 
     def get_test_data(self, scheduler):
         self.scheduler = scheduler
@@ -96,7 +94,7 @@ class FabTestManager(BaseFabManager):
         logging.info("exist_main_step")
 
         for item in self.scheduler.env_connect_infos:
-            unique_service_dict[item.service.service_name] = TestInfo(item)
+            unique_service_dict[item.service.service_name] = TestConnectInfo(item)
 
         while self.scheduler.exist_main_step():
             current_main_step = self.scheduler.get_next_main_step()
@@ -133,31 +131,18 @@ class FabTestManager(BaseFabManager):
             for p in process_list:
                 p.join()
 
-            parsed_logs = []
-
             for index, item in enumerate(service_connect_infos):
 
                 if not return_dict[index]:
                     logging.info("not return_dict[index]")
                     continue
 
-                # unique_service_dict[item.service.service_name].os_info = return_dict[index]
-                unique_os_info_dict[item.host.host_name] = return_dict[index]
-
-                # lines = return_dict[index].split('\n')
-                # for line in lines:
-                #     log = self.parse_log(parser_name, item.get_host_name(), line)
-                #     if log:
-                #         display_log = log.get_display_log()
-                #         logs.append(display_log)
-                #         parsed_logs.append(log)
-
-            # self.scheduler.setLogs(parsed_logs)
-
-        # for index, item in enumerate(service_connect_infos):
+                if return_dict[index].type == TestResultType.OS_INFO:
+                    unique_os_info_dict[item.host.host_name] = return_dict[index].value
 
         for service_name, item in unique_service_dict.items():
             host_name = item.connect_info.host.host_name
+
             if host_name in unique_os_info_dict:
                 item.os_info = unique_os_info_dict[host_name]
 

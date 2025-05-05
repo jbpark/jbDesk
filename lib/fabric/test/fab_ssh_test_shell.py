@@ -2,13 +2,16 @@ from lib.fabric.test.ssh_test_shell import SshTestShell
 from lib.fabric.fab_ssh_shell import FabSshShell
 import logging
 
+from lib.models.constants.test_result_type import TestResultType
 from lib.models.constants.test_step import TestStep
+from lib.models.fabric.test_result import TestResult
 
 logging.basicConfig(level=logging.DEBUG)
 
 import logging
 
 from fabric import Connection
+from fabric import Config
 
 from lib.fabric.fab_ssh_shell import FabSshShell
 from lib.fabric.log.ssh_log_shell import SshLogShell
@@ -57,6 +60,8 @@ class FabSshTestShell(FabSshShell):
         logging.getLogger("invoke").setLevel(logging.WARNING)
         logging.getLogger("fabric").setLevel(logging.WARNING)
 
+        config = Config(overrides={'sudo': {'password': decrypt_cipher_text(self.fab_connect_info.password)}})
+
         if self.fab_connect_info.gateway_host is not None:
             gateway = Connection(
                 host=self.fab_connect_info.gateway_host,
@@ -70,13 +75,15 @@ class FabSshTestShell(FabSshShell):
                 host=self.fab_connect_info.host,
                 user=self.fab_connect_info.user,
                 connect_kwargs={"password": decrypt_cipher_text(self.fab_connect_info.password)},
-                gateway=gateway
+                gateway=gateway,
+                config=config
             )
         else:
             fab_connect = Connection(
                 host=self.fab_connect_info.host,
                 user=self.fab_connect_info.user,
                 connect_kwargs={"password": decrypt_cipher_text(self.fab_connect_info.password)},
+                config=config
             )
 
         self.ssh_test_shell = SshTestShell(self.lock, self.scheduler, fab_connect)
@@ -86,11 +93,8 @@ class FabSshTestShell(FabSshShell):
             return return_dict
 
         if current_main_step == TestStep.OS_INFO:
-            log = self.ssh_test_shell.get_os_info()
+            result = TestResult(TestResultType.OS_INFO, self.ssh_test_shell.get_os_info())
         else:
-            log = None
+            result = None
 
-        # if log is None:
-        #     log = ""
-
-        return_dict[proc_id] = log
+        return_dict[proc_id] = result

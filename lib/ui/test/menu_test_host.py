@@ -1,12 +1,12 @@
 import logging
 
-from PyQt5.QtWidgets import (QAction, QPushButton, QLineEdit, QComboBox, QCheckBox, QWidget,
-                             QGroupBox, QHBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView)
+from PyQt5.QtCore import QThread, pyqtSignal
 from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import (QAction, QLineEdit, QComboBox, QCheckBox, QGroupBox, QHBoxLayout, QHeaderView)
+from PyQt5.QtWidgets import QWidget, QTableWidget, QTableWidgetItem, QPushButton
 
 from lib.manager.fabric.test.fab_test_manager import FabTestManager
 from lib.manager.fabric.test.fab_test_scheduler import FabTestScheduler
-# from lib.manager.test.service_test_manager import ServiceTestManager
 from lib.models.constants.config_key import ConfigKey
 from lib.models.constants.env_type import ENV_LIVE, ENV_STAGE, ENV_DEV
 from lib.ui.menu_layout import clear_layout
@@ -17,7 +17,43 @@ VENDOR_MARIADB = "MARIADB"
 
 MENU_TEST_SERVICE = "Test Service"
 
-g_table = None
+class ThreadTestWorker(QThread):
+    result_ready = pyqtSignal(object)  # row_index, result
+
+    def __init__(self, yaml_loader, config_loader, env):
+        super().__init__()
+        self.yaml_loader = yaml_loader
+        self.config_loader = config_loader
+        self.env = env
+
+    def run(self):
+        try:
+            manager = FabTestManager(self.env, None, None, None)
+            scheduler = FabTestScheduler(manager, self.yaml_loader, self.config_loader)
+            data = manager.get_test_data(scheduler)
+        except Exception as e:
+            logging.warn(f"Error: {e}")
+            data = None
+
+        logging.info("result_ready.emit")
+        self.result_ready.emit(data)
+
+
+class TestTableWindow:
+    def __init__(self, parent_self, yaml_loader, config_loader, table, tid_line, env_combo):
+        self.parent_self = parent_self
+        self.yaml_loader = yaml_loader
+        self.config_loader = config_loader
+        self.table = table
+        self.tid_line = tid_line
+        self.env_combo = env_combo
+
+    def run_thread(self):
+        env = self.env_combo.currentText()
+        thread = ThreadTestWorker(self.yaml_loader, self.config_loader, env)
+        thread.result_ready.connect(self.parent_self.update_test_table)
+        thread.start()
+        self.parent_self.threads.append(thread)
 
 
 def init_menu_test_service(self, menu_bar):
@@ -26,6 +62,7 @@ def init_menu_test_service(self, menu_bar):
     test_service_action.triggered.connect(lambda: self.set_function(MENU_TEST_SERVICE))
     test_menu.addAction(test_service_action)
 
+
 def save_env(yaml_loader, config_loader, table, tid_line, env_combo):
     section = MENU_TEST_SERVICE
     key = ConfigKey.KEY_ENV.key
@@ -33,7 +70,8 @@ def save_env(yaml_loader, config_loader, table, tid_line, env_combo):
     config_loader.set_config(section, key, value)
     init_test_service(yaml_loader, config_loader, table, tid_line, env_combo)
 
-def setup_test_service(yaml_loader, config_loader, main_layout):
+
+def setup_test_service(self, yaml_loader, config_loader, main_layout):
     clear_layout(main_layout)
 
     # 첫째 라인
@@ -64,7 +102,7 @@ def setup_test_service(yaml_loader, config_loader, main_layout):
 
     # Search 버튼
     search_btn = QPushButton("Test")
-    search_btn.clicked.connect(lambda: test_service(yaml_loader, config_loader, table, tid_line, env_combo))
+    search_btn.clicked.connect(lambda: test_service(self, yaml_loader, config_loader, table, tid_line, env_combo))
     first_line_layout.addWidget(search_btn)
 
     # 둘째 라인 - Grid
@@ -103,23 +141,14 @@ def setup_test_service(yaml_loader, config_loader, main_layout):
     main_layout.insertLayout(1, first_line_layout)
     main_layout.insertWidget(2, table)
 
+    self.result_table = table
+
     init_test_service(yaml_loader, config_loader, table, tid_line, env_combo)
 
-def update_table_data(yaml_loader, config_loader, table, tid_line, env_combo, data):
-    env = env_combo.currentText()
-    # manager = FabTestManager(env, None, None, None)
-    # scheduler = FabTestScheduler(manager, yaml_loader, config_loader)
-    # resp = manager.get_result(scheduler)
 
-
-    # manager = ServiceTestManager(env)
-    # manager.load_info(yaml_loader)
-    # scheduler = FabLogScheduler(manager, yaml_loader, config_loader)
-    # log_resp = manager.get_log_info(scheduler)
-
+def update_test_table(table, data):
     table.setRowCount(0)
 
-    # infos = manager.service_test_infos
     for item in data.logs:
         row_position = table.rowCount()  # 현재 행 개수 확인
         table.insertRow(row_position)  # 새 행 추가
@@ -142,29 +171,22 @@ def update_table_data(yaml_loader, config_loader, table, tid_line, env_combo, da
 
     table.resizeColumnsToContents()
 
+
 def init_test_service(yaml_loader, config_loader, table, tid_line, env_combo):
     env = env_combo.currentText()
     keyword = "db34a6fa-af3d-4aad-a783-6fbbb4b2bf65"
     # keyword = "T2405110733507a666506"
-    tid_line.setText(keyword)
-    tid_line.update()
+    # tid_line.setText(keyword)
+    # tid_line.update()
     keyword = tid_line.text()
 
     manager = FabTestManager(env, None, None, None)
     scheduler = FabTestScheduler(manager, yaml_loader, config_loader)
     data = manager.get_data(scheduler)
 
-    update_table_data(yaml_loader, config_loader, table, tid_line, env_combo, data)
+    update_test_table(table, data)
 
 
-def test_service(yaml_loader, config_loader, table, tid_line, env_combo):
-    env = env_combo.currentText()
-    # keyword = "db34a6fa-af3d-4aad-a783-6fbbb4b2bf65"
-    # keyword = "T2405110733507a666506"
-    keyword = tid_line.text()
-
-    manager = FabTestManager(env, None, None, None)
-    scheduler = FabTestScheduler(manager, yaml_loader, config_loader)
-    data = manager.get_test_data(scheduler)
-
-    update_table_data(yaml_loader, config_loader, table, tid_line, env_combo, data)
+def test_service(self, yaml_loader, config_loader, table, tid_line, env_combo):
+    table_window = TestTableWindow(self, yaml_loader, config_loader, table, tid_line, env_combo)
+    table_window.run_thread()
